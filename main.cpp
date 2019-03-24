@@ -12,6 +12,7 @@ using namespace std::chrono;
 
 SDL_Renderer * renderer;
 SDL_Window * window;
+SDL_Texture * home_icon;
 
 static module * current_module;
 static module * next_module;
@@ -70,8 +71,11 @@ int main()
 	splash_icon = IMG_LoadTexture(renderer, (resource_root / "splash.png").c_str());
 	if(splash_icon == nullptr)
 		die("Failed to load splash.png: %s", SDL_GetError());
-
 	SDL_SetTextureBlendMode(splash_icon, SDL_BLENDMODE_BLEND);
+
+	home_icon = IMG_LoadTexture(renderer, (resource_root / "icons" / "home.png").c_str());
+	if(home_icon == nullptr)
+		die("Failed to load home.png: %s", SDL_GetError());
 
 	module::change<screensaver>();
 

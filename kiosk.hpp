@@ -12,6 +12,7 @@
 
 extern SDL_Renderer * renderer;
 extern SDL_Window * window;
+extern SDL_Texture * home_icon;
 
 extern double time_step;  // delta time in seconds
 extern double total_time; // total time in seconds since start
@@ -19,5 +20,6 @@ extern double total_time; // total time in seconds since start
 extern glm::ivec2 screen_size; // screen size in pixels
 
 extern std::filesystem::path resource_root; // root folder for all resources
+
 
 #endif // KIOSK_HPP

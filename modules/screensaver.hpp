@@ -17,7 +17,7 @@ struct screensaver : module
 
 	void render() override;
 
-	void notify(SDL_Event const & ev);
+	void notify(SDL_Event const & ev) override;
 };
 
 #endif // SCREENSAVER_HPP

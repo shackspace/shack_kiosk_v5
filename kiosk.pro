@@ -22,7 +22,8 @@ SOURCES += \
     modules/mainmenu.cpp \
     gui_module.cpp \
     widget.cpp \
-    widgets/button.cpp
+    widgets/button.cpp \
+    modules/lightroom.cpp
 
 HEADERS += \
     modules/screensaver.hpp \
@@ -31,4 +32,5 @@ HEADERS += \
     modules/mainmenu.hpp \
     gui_module.hpp \
     widget.hpp \
-    widgets/button.hpp
+    widgets/button.hpp \
+    modules/lightroom.hpp

@@ -1,15 +1,20 @@
 #include "mainmenu.hpp"
 #include "widgets/button.hpp"
+#include "modules/lightroom.hpp"
 
 namespace
 {
 	int constexpr item_padding = 50;
 }
 
+template<typename Target>
 static button * set(button * b, SDL_Color color, char const * file)
 {
 	b->color = color;
 	b->icon = IMG_LoadTexture(renderer, (resource_root / "icons" / file).c_str());
+	b->on_click = []() {
+		module::change<Target>();
+	};
 	return b;
 }
 
@@ -29,15 +34,15 @@ void mainmenu::init()
 
 	SDL_Color * col = palette;
 
-	center_widgets.push_back(set(add<button>(), *col++, "lightbulb-on.png"));
-	center_widgets.push_back(set(add<button>(), *col++, "tram.png"));
-	center_widgets.push_back(set(add<button>(), *col++, "bottle-wine.png"));
-	center_widgets.push_back(set(add<button>(), *col++, "information.png"));
+	center_widgets.push_back(set<lightroom>(add<button>(), *col++, "lightbulb-on.png"));
+	center_widgets.push_back(set<mainmenu>(add<button>(), *col++, "tram.png"));
+	center_widgets.push_back(set<mainmenu>(add<button>(), *col++, "bottle-wine.png"));
+	center_widgets.push_back(set<mainmenu>(add<button>(), *col++, "information.png"));
 
-	center_widgets.push_back(set(add<button>(), *col++, "flash.png"));
-	center_widgets.push_back(set(add<button>(), *col++, "volume-high.png"));
-	center_widgets.push_back(set(add<button>(), *col++, "cellphone-key.png"));
-	center_widgets.push_back(set(add<button>(), *col++, "alert.png"));
+	center_widgets.push_back(set<mainmenu>(add<button>(), *col++, "flash.png"));
+	center_widgets.push_back(set<mainmenu>(add<button>(), *col++, "volume-high.png"));
+	center_widgets.push_back(set<mainmenu>(add<button>(), *col++, "cellphone-key.png"));
+	center_widgets.push_back(set<mainmenu>(add<button>(), *col++, "alert.png"));
 }
 
 void mainmenu::layout()
