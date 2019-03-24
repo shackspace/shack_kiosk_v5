@@ -28,10 +28,10 @@ void screensaver::enter()
 void screensaver::notify(SDL_Event const & ev)
 {
 	if(ev.type == SDL_MOUSEBUTTONDOWN)
-		change<mainmenu>();
+		activate<mainmenu>();
 
 	if(ev.type == SDL_KEYDOWN)
-		change<mainmenu>();
+		activate<mainmenu>();
 }
 
 void screensaver::render()

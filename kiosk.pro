@@ -16,14 +16,15 @@ QMAKE_CXXFLAGS += $$system("pkg-config --cflags $$PACKAGES | sed 's|-I|-isystem 
 QMAKE_LFLAGS   += $$system("pkg-config --libs   $$PACKAGES")
 
 SOURCES += \
-        main.cpp \
+    main.cpp \
     modules/screensaver.cpp \
     module.cpp \
     modules/mainmenu.cpp \
     gui_module.cpp \
     widget.cpp \
     widgets/button.cpp \
-    modules/lightroom.cpp
+    modules/lightroom.cpp \
+    modules/tramview.cpp
 
 HEADERS += \
     modules/screensaver.hpp \
@@ -33,4 +34,5 @@ HEADERS += \
     gui_module.hpp \
     widget.hpp \
     widgets/button.hpp \
-    modules/lightroom.hpp
+    modules/lightroom.hpp \
+    modules/tramview.hpp

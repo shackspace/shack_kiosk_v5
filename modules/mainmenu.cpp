@@ -1,6 +1,7 @@
 #include "mainmenu.hpp"
 #include "widgets/button.hpp"
 #include "modules/lightroom.hpp"
+#include "modules/tramview.hpp"
 
 namespace
 {
@@ -13,7 +14,7 @@ static button * set(button * b, SDL_Color color, char const * file)
 	b->color = color;
 	b->icon = IMG_LoadTexture(renderer, (resource_root / "icons" / file).c_str());
 	b->on_click = []() {
-		module::change<Target>();
+		module::activate<Target>();
 	};
 	return b;
 }
@@ -35,7 +36,7 @@ void mainmenu::init()
 	SDL_Color * col = palette;
 
 	center_widgets.push_back(set<lightroom>(add<button>(), *col++, "lightbulb-on.png"));
-	center_widgets.push_back(set<mainmenu>(add<button>(), *col++, "tram.png"));
+	center_widgets.push_back(set<tramview>(add<button>(), *col++, "tram.png"));
 	center_widgets.push_back(set<mainmenu>(add<button>(), *col++, "bottle-wine.png"));
 	center_widgets.push_back(set<mainmenu>(add<button>(), *col++, "information.png"));
 

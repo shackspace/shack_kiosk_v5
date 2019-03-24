@@ -1,6 +1,6 @@
 #include "gui_module.hpp"
-
-
+#include "widgets/button.hpp"
+#include "modules/mainmenu.hpp"
 
 void gui_module::notify(SDL_Event const & ev)
 {
@@ -48,4 +48,16 @@ void gui_module::render()
 void gui_module::layout()
 {
 
+}
+
+
+void gui_module::add_back_button()
+{
+	auto * btn = add<button>();
+	btn->bounds = { 10, 10, 200, 200 };
+	btn->icon = home_icon;
+	btn->color = { 0x03, 0xA9, 0xF4, 255 };
+	btn->on_click = []() {
+		activate<mainmenu>();
+	};
 }

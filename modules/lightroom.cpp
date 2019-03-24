@@ -6,6 +6,8 @@
 
 void lightroom::init()
 {
+	add_back_button();
+
 	backgrounds =
 	{
 	  IMG_LoadTexture(renderer, (resource_root / "lightroom" / "zone0000.png" ).c_str()),
@@ -52,14 +54,6 @@ void lightroom::init()
 	  switch_t { 0x08, { SDL_Rect { 552, 73, 232, 101 } } }, // ganz hinten rechts
 	  switch_t { 0x04, { SDL_Rect { 247, 152, 259, 114 } } }, // ganz hinten links
 	  switch_t { 0x04, { SDL_Rect { 325, 252, 281, 138 } } }, // hinten links
-	};
-
-	auto * btn = add<button>();
-	btn->bounds = { 10, 10, 200, 200 };
-	btn->icon = home_icon;
-	btn->color = { 0x03, 0xA9, 0xF4, 255 };
-	btn->on_click = []() {
-		change<mainmenu>();
 	};
 }
 

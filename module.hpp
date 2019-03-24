@@ -25,11 +25,11 @@ struct module
 	virtual void leave();
 
 private:
-	static void change(module * other);
+	static void activate(module * other);
 public:
 	//! Switches to the given module.
 	template<typename T>
-	static void change()
+	static T * get()
 	{
 		static std::optional<T> module;
 		if(not module)
@@ -37,7 +37,13 @@ public:
 			module.emplace();
 			module->init();
 		}
-		change(&module.value());
+		return &module.value();
+	}
+
+	template<typename T>
+	static void activate()
+	{
+		activate(get<T>());
 	}
 };
 

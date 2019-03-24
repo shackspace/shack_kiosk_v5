@@ -11,6 +11,8 @@ struct gui_module : module
 {
 	std::vector<std::unique_ptr<widget>> widgets;
 
+	void add_back_button();
+
 	void notify(SDL_Event const & ev) override;
 
 	//! should lay out the module. called whenever screen size changes

@@ -1,6 +1,8 @@
 #include "module.hpp"
 #include "modules/screensaver.hpp"
 #include "modules/mainmenu.hpp"
+#include "modules/lightroom.hpp"
+#include "modules/tramview.hpp"
 
 #include <SDL.h>
 #include <SDL_image.h>
@@ -16,15 +18,16 @@ SDL_Texture * home_icon;
 
 static module * current_module;
 static module * next_module;
+static module * previous_module;
 
 double total_time;
 double time_step;
 
-glm::ivec2 screen_size;
+glm::ivec2 screen_size { 1280, 1024 };
 
 std::filesystem::path resource_root;
 
-void module::change(module * other)
+void module::activate(module * other)
 {
 	next_module = other;
 }
@@ -41,7 +44,7 @@ int main()
 {
 	resource_root = std::filesystem::current_path() / "resources";
 
-	srand(time(NULL));
+	srand(time(nullptr));
 
 	if(SDL_Init(SDL_INIT_EVERYTHING) < 0)
 		die("Failed to initialize SDL: %s", SDL_GetError());
@@ -77,9 +80,61 @@ int main()
 	if(home_icon == nullptr)
 		die("Failed to load home.png: %s", SDL_GetError());
 
-	module::change<screensaver>();
+	module::get<screensaver>();
+	module::get<mainmenu>();
+	module::get<lightroom>();
+	module::get<tramview>();
+
+	module::activate<screensaver>();
 
 	std::vector<splash> splashes;
+
+	double transition_progress = 0.0;
+
+	SDL_Texture * frontbuffer = nullptr;
+	SDL_Texture * backbuffer = nullptr;
+
+	auto const recreate_rendertargets = [&]()
+	{
+		int dx, dy;
+		SDL_GetWindowSize(window, &dx, &dy);
+
+		if(frontbuffer != nullptr)
+			SDL_DestroyTexture(frontbuffer);
+
+		if(backbuffer != nullptr)
+			SDL_DestroyTexture(backbuffer);
+
+		frontbuffer = SDL_CreateTexture(
+			renderer,
+			SDL_PIXELFORMAT_RGBA32,
+			SDL_TEXTUREACCESS_TARGET,
+			dx, dy
+		);
+		if(frontbuffer == nullptr)
+			die("Failed to create frontbuffer: %s", SDL_GetError());
+
+		backbuffer = SDL_CreateTexture(
+			renderer,
+			SDL_PIXELFORMAT_RGBA32,
+			SDL_TEXTUREACCESS_TARGET,
+			dx, dy
+		);
+		if(backbuffer == nullptr)
+			die("Failed to create backbuffer: %s", SDL_GetError());
+
+		SDL_SetTextureBlendMode(frontbuffer, SDL_BLENDMODE_BLEND);
+		SDL_SetTextureBlendMode(backbuffer, SDL_BLENDMODE_BLEND);
+	};
+
+	recreate_rendertargets();
+
+	int pixel_transition_matrix[40][50];
+	for(auto & row  : pixel_transition_matrix)
+		for(auto & value : row)
+			value = rand() % 64;
+
+	int current_transition = 2;
 
 	auto const startup = high_resolution_clock::now();
 	auto last_frame = startup;
@@ -92,7 +147,9 @@ int main()
 		{
 			if(current_module != nullptr)
 				current_module->leave();
+			previous_module = current_module;
 			current_module = next_module;
+			transition_progress = 0.0;
 			if(current_module != nullptr)
 				current_module->enter();
 		}
@@ -111,14 +168,14 @@ int main()
 			}
 			if(ev.type == SDL_QUIT)
 				next_module = nullptr;
-			else
+			else if(previous_module == nullptr) // if no transition is in progress
 				current_module->notify(ev);
 		}
 
 		auto const now = high_resolution_clock::now();
 
 		if((now - last_event) > seconds(15))
-			module::change<screensaver>();
+			module::activate<screensaver>();
 
 		total_time = duration_cast<milliseconds>(now - startup).count() / 1000.0;
 		time_step = duration_cast<milliseconds>(now - last_frame).count() / 1000.0;
@@ -127,18 +184,106 @@ int main()
 		for(auto & sp : splashes)
 			sp.progress += time_step;
 
-		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
-		SDL_RenderClear(renderer);
+		// Render transition
+		if(previous_module != nullptr)
+		{
+			SDL_SetRenderTarget(renderer, backbuffer);
+			SDL_SetRenderDrawColor(renderer, 0x30, 0x30, 0x30, 0xFF);
+			SDL_RenderClear(renderer);
+			previous_module->render();
 
-		current_module->render();
+			SDL_SetRenderTarget(renderer, frontbuffer);
+			SDL_SetRenderDrawColor(renderer, 0x30, 0x30, 0x30, 0xFF);
+			SDL_RenderClear(renderer);
+			current_module->render();
+
+			SDL_SetRenderTarget(renderer, nullptr);
+			SDL_SetRenderDrawColor(renderer, 0xFF, 0x00, 0xFF, 0xFF);
+			SDL_RenderClear(renderer);
+
+			switch(current_transition)
+			{
+				case 0: // alpha blend
+				{
+					SDL_RenderCopy(renderer, backbuffer, nullptr, nullptr);
+					SDL_SetTextureAlphaMod(frontbuffer, std::clamp(255.0 * pow(transition_progress, 2.0), 0.0, 255.0));
+					SDL_RenderCopy(renderer, frontbuffer, nullptr, nullptr);
+
+					transition_progress += 5.0 * time_step;
+					break;
+				}
+
+				case 1: // vertical sliding
+				{
+					int pos_y = screen_size.y * glm::smoothstep(0.0, 1.0, transition_progress);
+
+					SDL_Rect position { 0, 0, screen_size.x, pos_y };
+					SDL_RenderCopy(renderer, frontbuffer, &position, &position);
+
+					position.y = position.h;
+					position.h = screen_size.y - position.y;
+					SDL_RenderCopy(renderer, backbuffer, &position, &position);
+
+					position.y = pos_y - 2;
+					position.h = 5;
+					SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
+					SDL_RenderFillRect(renderer, &position);
+
+					transition_progress += 2.0 * time_step;
+					break;
+				}
+
+				case 2: // pixels
+				{
+					int w = screen_size.x / 50;
+					int h = screen_size.y / 40;
+
+					int progress = 64 * transition_progress;
+
+					for(int x = 0; x < 50; x++)
+					{
+						for(int y = 0; y < 40; y++)
+						{
+							SDL_Rect pos = { w * x, h * y, w, h };
+
+							if(progress > pixel_transition_matrix[y][x])
+								SDL_RenderCopy(renderer, frontbuffer, &pos, &pos);
+							else
+								SDL_RenderCopy(renderer, backbuffer, &pos, &pos);
+						}
+					}
+					transition_progress += 4.5 * time_step;
+
+					break;
+				}
+			}
+
+			if(transition_progress >= 1.0)
+			{
+				current_transition = rand() % 3;
+				previous_module = nullptr;
+			}
+		}
+		else
+		{
+			SDL_SetRenderTarget(renderer, frontbuffer);
+			SDL_SetRenderDrawColor(renderer, 0x30, 0x30, 0x30, 0xFF);
+			SDL_RenderClear(renderer);
+			current_module->render();
+
+			SDL_SetRenderTarget(renderer, nullptr);
+			SDL_SetRenderDrawColor(renderer, 0xFF, 0x00, 0xFF, 0xFF);
+			SDL_RenderClear(renderer);
+			SDL_RenderCopy(renderer, frontbuffer, nullptr, nullptr);
+		}
 
 		for(auto const & splash : splashes)
 		{
 			int size = 100 * pow(splash.progress, 0.5);
 			SDL_Rect rekt = {
-			  splash.center.x - size/2,
-			  splash.center.y - size/2,
-			  size, size
+				splash.center.x - size/2,
+				splash.center.y - size/2,
+				size, size
 			};
 			int x = std::max<int>(0, 255 - 255 * pow(splash.progress, 0.5));
 			SDL_SetTextureAlphaMod(splash_icon, x);
