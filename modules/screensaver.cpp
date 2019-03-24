@@ -38,9 +38,10 @@ void screensaver::render()
 {
 	timer += time_step;
 
-	double & t = timer; // 10 sekunden
+	double t = timer; // 10 sekunden
 	if(t >= 10.0)
 	{
+		t -= 10.0;
 		timer -= 10.0;
 		next_effect();
 	}

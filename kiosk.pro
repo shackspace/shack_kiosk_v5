@@ -19,10 +19,16 @@ SOURCES += \
         main.cpp \
     modules/screensaver.cpp \
     module.cpp \
-    modules/mainmenu.cpp
+    modules/mainmenu.cpp \
+    gui_module.cpp \
+    widget.cpp \
+    widgets/button.cpp
 
 HEADERS += \
     modules/screensaver.hpp \
     module.hpp \
     kiosk.hpp \
-    modules/mainmenu.hpp
+    modules/mainmenu.hpp \
+    gui_module.hpp \
+    widget.hpp \
+    widgets/button.hpp
