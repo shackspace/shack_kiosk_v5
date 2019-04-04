@@ -8,15 +8,20 @@ CONFIG += c++17
 QMAKE_CXXFLAGS += -std=c++17
 QMAKE_LFLAGS += -std=c++17
 LIBS += -lstdc++fs
+CONFIG += static
 
-PACKAGES = SDL2_image
-
-QMAKE_CFLAGS   += $$system("pkg-config --cflags $$PACKAGES | sed 's|-I|-isystem |g'")
-QMAKE_CXXFLAGS += $$system("pkg-config --cflags $$PACKAGES | sed 's|-I|-isystem |g'")
-QMAKE_LFLAGS   += $$system("pkg-config --libs   $$PACKAGES")
+#PACKAGES = SDL2_image
+#QMAKE_CFLAGS   += $$system("pkg-config --cflags $$PACKAGES | sed 's|-I|-isystem |g'")
+#QMAKE_CXXFLAGS += $$system("pkg-config --cflags $$PACKAGES | sed 's|-I|-isystem |g'")
+#QMAKE_LFLAGS   += $$system("pkg-config --libs   $$PACKAGES")
 
 INCLUDEPATH += /home/felix/projects/SDL/include
 LIBS += /home/felix/projects/SDL/build/libSDL2.a
+
+INCLUDEPATH += /home/felix/projects/SDL_image
+LIBS += /home/felix/projects/SDL_image/.libs/libSDL2_image.a
+
+LIBS += -pthread -ldl
 
 SOURCES += \
     main.cpp \

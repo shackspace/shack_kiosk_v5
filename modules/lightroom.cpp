@@ -3,6 +3,7 @@
 #include "widgets/button.hpp"
 
 #include <algorithm>
+#include <glm/glm.hpp>
 
 void lightroom::init()
 {
@@ -46,7 +47,7 @@ void lightroom::init()
 	  IMG_LoadTexture(renderer, (resource_root / "lightroom" / "switch7.png" ).c_str()),
 	};
 	for(auto tex : switches)
-		SDL_SetTextureBlendMode(tex, SDL_BLENDMODE_ADD);
+		SDL_SetTextureBlendMode(tex, SDL_BLENDMODE_BLEND);
 
 	switch_config =
 	{
@@ -121,23 +122,18 @@ void lightroom::render()
 	// override the background image with 100% black switches
 	SDL_RenderCopy(renderer, switch_background, nullptr, &area);
 
-	int a;
 	for(size_t i = 0; i < 8; i++)
 	{
-		auto power = switch_config[i].power;
+		auto const power = switch_config[i].power;
+		auto const fcol = glm::mix(
+			glm::vec3(1, 0, 0),
+			glm::vec3(0, 1, 0),
+			power
+		);
+		auto const map = [](float f) { return Uint8(std::clamp(255.0f * f, 0.0f, 255.0f)); };
 
-		a = std::clamp<int>(2.0 * 255 * power, 0, 255);
-
-		SDL_SetTextureAlphaMod(switches[i], a);
-		SDL_SetTextureColorMod(switches[i], 0x00, 0xFF, 0x00);
+		SDL_SetTextureColorMod(switches[i], map(fcol.r), map(fcol.g), map(fcol.b));
 		SDL_RenderCopy(renderer, switches[i], nullptr, &area);
-
-		a = std::clamp<int>(255 * std::clamp(1.0 - std::pow(power, switch_config[i].is_on ? 0.5 : 2.0), 0.0, 1.0), 0, 255);
-
-		SDL_SetTextureAlphaMod(switches[i], a);
-		SDL_SetTextureColorMod(switches[i], 0xFF, 0x00, 0x00);
-		SDL_RenderCopy(renderer, switches[i], nullptr, &area);
-
 	}
 
 	gui_module::render();

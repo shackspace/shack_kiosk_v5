@@ -64,10 +64,12 @@ int main()
 	if(window == nullptr)
 		die("Failed to create window: %s", SDL_GetError());
 
+	SDL_SetHintWithPriority("SDL_HINT_RENDER_VSYNC", "0", SDL_HINT_OVERRIDE);
+
 	renderer = SDL_CreateRenderer(
 		window,
 		-1, // best possible
-		SDL_RENDERER_ACCELERATED | SDL_RENDERER_TARGETTEXTURE | SDL_RENDERER_PRESENTVSYNC
+		SDL_RENDERER_ACCELERATED | SDL_RENDERER_TARGETTEXTURE
 	);
 	if(renderer == nullptr)
 		die("Failed to create renderer: %s", SDL_GetError());
@@ -245,6 +247,10 @@ int main()
 			sp.progress += time_step;
 
 		// Render transition
+
+		auto const start_time = high_resolution_clock::now();
+
+		previous_module = nullptr;
 		if(previous_module != nullptr)
 		{
 			SDL_SetRenderTarget(renderer, backbuffer);
@@ -375,6 +381,10 @@ int main()
 		);
 
 		SDL_RenderPresent(renderer);
+
+		auto const end_time = high_resolution_clock::now();
+
+		fprintf(stdout, "%ld µs\n", duration_cast<microseconds>(end_time - start_time).count());
 	}
 
 	SDL_DestroyRenderer(renderer);
