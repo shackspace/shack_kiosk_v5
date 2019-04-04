@@ -25,13 +25,15 @@ void screensaver::enter()
 	timer = 8.0;
 }
 
-void screensaver::notify(SDL_Event const & ev)
+notify_result screensaver::notify(SDL_Event const & ev)
 {
 	if(ev.type == SDL_MOUSEBUTTONDOWN)
 		activate<mainmenu>();
 
 	if(ev.type == SDL_KEYDOWN)
 		activate<mainmenu>();
+
+	return failure;
 }
 
 void screensaver::render()
@@ -46,15 +48,12 @@ void screensaver::render()
 		next_effect();
 	}
 
-	int sx, sy;
-	SDL_GetWindowSize(window, &sx, &sy);
-
 	SDL_SetRenderDrawColor(renderer, 0,0,0,255);
 	SDL_RenderClear(renderer);
 
 	SDL_Rect rect = {0, 0, 1146, 500 };
-	rect.x = (sx - rect.w) / 2;
-	rect.y = (sy - rect.h) / 2;
+	rect.x = (screen_size.x - rect.w) / 2;
+	rect.y = (screen_size.y - rect.h) / 2;
 
 	SDL_Point rot_point = {0, 0};
 	double rot = 0;
@@ -151,8 +150,8 @@ void screensaver::render()
 				rect.w *= s;
 				rect.h /= t;
 
-				rect.x = (sx - rect.w) / 2;
-				rect.y = (sy - rect.h) / 2;
+				rect.x = (screen_size.x - rect.w) / 2;
+				rect.y = (screen_size.y - rect.h) / 2;
 			}
 			else
 			{
@@ -171,7 +170,7 @@ void screensaver::render()
 					flip = SDL_FLIP_VERTICAL;
 					rect.h = -rect.h;
 				}
-				rect.y = (sy - rect.h) / 2;
+				rect.y = (screen_size.y - rect.h) / 2;
 			}
 			break;
 		}
@@ -186,7 +185,7 @@ void screensaver::render()
 					flip = SDL_FLIP_HORIZONTAL;
 					rect.w = -rect.w;
 				}
-				rect.x = (sx - rect.w) / 2;
+				rect.x = (screen_size.x - rect.w) / 2;
 			}
 			break;
 		}

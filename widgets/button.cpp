@@ -3,13 +3,15 @@
 int constexpr icon_padding = 25;
 int constexpr border_width = 3;
 
-void button::notify(SDL_Event const & ev)
+notify_result button::notify(SDL_Event const & ev)
 {
 	if(ev.type == SDL_MOUSEBUTTONDOWN)
 	{
 		if(on_click)
 			on_click();
+		return success;
 	}
+	return widget::notify(ev);
 }
 
 void button::render()

@@ -2,7 +2,7 @@
 #include "widgets/button.hpp"
 #include "modules/mainmenu.hpp"
 
-void gui_module::notify(SDL_Event const & ev)
+notify_result gui_module::notify(SDL_Event const & ev)
 {
 	SDL_Point pt;
 	switch(ev.type)
@@ -21,7 +21,7 @@ void gui_module::notify(SDL_Event const & ev)
 			break;
 
 		default: // no UI-relevant event:
-			return;
+			return module::notify(ev);
 	}
 
 	for(auto it = widgets.rbegin(); it != widgets.rend(); it++)
@@ -31,9 +31,10 @@ void gui_module::notify(SDL_Event const & ev)
 		if(not SDL_PointInRect(&pt, &ptr->bounds))
 			continue;
 
-		(*it)->notify(ev);
-		break;
+		return (*it)->notify(ev);
 	}
+
+	return module::notify(ev);
 }
 
 void gui_module::render()

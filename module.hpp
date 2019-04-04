@@ -5,6 +5,8 @@
 #include <SDL.h>
 #include <optional>
 
+enum notify_result { failure, success };
+
 struct module
 {
 	virtual ~module();
@@ -16,7 +18,7 @@ struct module
 	virtual void enter();
 
 	//! called when an SDL event happens.
-	virtual void notify(SDL_Event const & ev);
+	virtual notify_result notify(SDL_Event const & ev);
 
 	//! should draw the module
 	virtual void render();

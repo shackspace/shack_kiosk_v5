@@ -5,9 +5,9 @@ widget::~widget()
 
 }
 
-void widget::notify(SDL_Event const &)
+notify_result widget::notify(SDL_Event const &)
 {
-
+	return failure;
 }
 
 void widget::render()

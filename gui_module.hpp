@@ -13,7 +13,7 @@ struct gui_module : module
 
 	void add_back_button();
 
-	void notify(SDL_Event const & ev) override;
+	notify_result notify(SDL_Event const & ev) override;
 
 	//! should lay out the module. called whenever screen size changes
 	virtual void layout();

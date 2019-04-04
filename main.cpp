@@ -38,6 +38,7 @@ struct splash
 {
 	double progress = 0.0;
 	SDL_Point center;
+	SDL_Color color = { 0xFF, 0xFF, 0xFF, 0xFF };
 };
 
 int main()
@@ -110,7 +111,9 @@ int main()
 	auto const recreate_rendertargets = [&]()
 	{
 		int dx, dy;
-		SDL_GetWindowSize(window, &dx, &dy);
+		// SDL_GetWindowSize(window, &dx, &dy);
+		dx = 1280;
+		dy = 1024;
 
 		if(frontbuffer != nullptr)
 			SDL_DestroyTexture(frontbuffer);
@@ -161,7 +164,16 @@ int main()
 	auto last_event = startup;
 	while(next_module != nullptr)
 	{
-		SDL_GetWindowSize(window, &screen_size.x, &screen_size.y);
+		int scr_x, scr_y;
+		SDL_GetWindowSize(window, &scr_x, &scr_y);
+		screen_size = { 1280, 1024 };
+
+		SDL_Rect const actual_screen = {
+			(scr_x - screen_size.x) / 2,
+			(scr_y - screen_size.y) / 2,
+			screen_size.x,
+			screen_size.y,
+		};
 
 		if(current_module != next_module)
 		{
@@ -180,16 +192,44 @@ int main()
 			if((ev.type == SDL_MOUSEBUTTONDOWN) or (ev.type == SDL_KEYDOWN))
 				last_event = high_resolution_clock::now();
 
+			splash * splash = nullptr;
 			if(ev.type == SDL_MOUSEBUTTONDOWN)
 			{
-				auto & sp = splashes.emplace_back();
-				sp.center.x = ev.button.x;
-				sp.center.y = ev.button.y;
+				splash = &splashes.emplace_back();
+				splash->center.x = ev.button.x;
+				splash->center.y = ev.button.y;
 			}
+
+			switch(ev.type)
+			{
+				case SDL_MOUSEBUTTONUP:
+				case SDL_MOUSEBUTTONDOWN:
+					ev.button.x -= actual_screen.x;
+					ev.button.y -= actual_screen.y;
+					break;
+				case SDL_MOUSEMOTION:
+					ev.motion.x -= actual_screen.x;
+					ev.motion.y -= actual_screen.y;
+					break;
+				case SDL_MOUSEWHEEL:
+					ev.wheel.x -= actual_screen.x;
+					ev.wheel.y -= actual_screen.y;
+					break;
+			}
+
 			if(ev.type == SDL_QUIT)
+			{
 				next_module = nullptr;
+			}
 			else if(previous_module == nullptr) // if no transition is in progress
-				current_module->notify(ev);
+			{
+				auto const result = current_module->notify(ev);
+				if(splash != nullptr)
+				{
+					if(result == failure)
+						splash->color = { 0xFF, 0x80, 0x80, 0xFF };
+				}
+			}
 		}
 
 		auto const now = high_resolution_clock::now();
@@ -225,9 +265,9 @@ int main()
 			{
 				case 0: // alpha blend
 				{
-					SDL_RenderCopy(renderer, backbuffer, nullptr, nullptr);
+					SDL_RenderCopy(renderer, backbuffer, nullptr, &actual_screen);
 					SDL_SetTextureAlphaMod(frontbuffer, std::clamp(255.0 * pow(transition_progress, 2.0), 0.0, 255.0));
-					SDL_RenderCopy(renderer, frontbuffer, nullptr, nullptr);
+					SDL_RenderCopy(renderer, frontbuffer, nullptr, &actual_screen);
 
 					transition_progress += 5.0 * time_step;
 					break;
@@ -237,17 +277,19 @@ int main()
 				{
 					int pos_y = screen_size.y * glm::smoothstep(0.0, 1.0, transition_progress);
 
-					SDL_Rect position { 0, 0, screen_size.x, pos_y };
-					SDL_RenderCopy(renderer, frontbuffer, &position, &position);
+					SDL_Rect src_position { 0, 0, screen_size.x, pos_y };
+					SDL_Rect dst_position { actual_screen.x, actual_screen.y, screen_size.x, pos_y };
+					SDL_RenderCopy(renderer, frontbuffer, &src_position, &dst_position);
 
-					position.y = position.h;
-					position.h = screen_size.y - position.y;
-					SDL_RenderCopy(renderer, backbuffer, &position, &position);
+					src_position.y = src_position.h;
+					src_position.h = screen_size.y - src_position.y;
+					dst_position = { actual_screen.x + src_position.x, actual_screen.y + src_position.y, src_position.w, src_position.h };
+					SDL_RenderCopy(renderer, backbuffer, &src_position, &dst_position);
 
-					position.y = pos_y - 2;
-					position.h = 5;
+					dst_position.y = actual_screen.y + pos_y - 2;
+					dst_position.h = 5;
 					SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
-					SDL_RenderFillRect(renderer, &position);
+					SDL_RenderFillRect(renderer, &dst_position);
 
 					transition_progress += 2.0 * time_step;
 					break;
@@ -255,8 +297,8 @@ int main()
 
 				case 2: // pixels
 				{
-					int w = screen_size.x / 25;
-					int h = screen_size.y / 20;
+					int const w = screen_size.x / 25;
+					int const h = screen_size.y / 20;
 
 					int progress = 64 * transition_progress;
 
@@ -264,12 +306,23 @@ int main()
 					{
 						for(int y = 0; y < 20; y++)
 						{
-							SDL_Rect pos = { w * x, h * y, w, h };
+							SDL_Rect src_pos = {
+								w * x,
+								h * y,
+								w,
+								h
+							};
+							SDL_Rect dst_pos = {
+								actual_screen.x + src_pos.x,
+							  actual_screen.y + src_pos.y,
+							  src_pos.w,
+							  src_pos.h,
+							};
 
 							if(progress > pixel_transition_matrix[y][x])
-								SDL_RenderCopy(renderer, frontbuffer, &pos, &pos);
+								SDL_RenderCopy(renderer, frontbuffer, &src_pos, &dst_pos);
 							else
-								SDL_RenderCopy(renderer, backbuffer, &pos, &pos);
+								SDL_RenderCopy(renderer, backbuffer, &src_pos, &dst_pos);
 						}
 					}
 					transition_progress += 4.5 * time_step;
@@ -294,7 +347,7 @@ int main()
 			SDL_SetRenderTarget(renderer, nullptr);
 			SDL_SetRenderDrawColor(renderer, 0xFF, 0x00, 0xFF, 0xFF);
 			SDL_RenderClear(renderer);
-			SDL_RenderCopy(renderer, frontbuffer, nullptr, nullptr);
+			SDL_RenderCopy(renderer, frontbuffer, nullptr, &actual_screen);
 		}
 
 		for(auto const & splash : splashes)
@@ -307,6 +360,7 @@ int main()
 			};
 			int x = std::max<int>(0, 255 - 255 * pow(splash.progress, 0.5));
 			SDL_SetTextureAlphaMod(splash_icon, x);
+			SDL_SetTextureColorMod(splash_icon, splash.color.r, splash.color.g, splash.color.b);
 			SDL_RenderCopy(
 				renderer,
 				splash_icon,

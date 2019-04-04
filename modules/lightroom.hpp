@@ -22,7 +22,7 @@ struct lightroom : gui_module
 
 	void init() override;
 
-	void notify(SDL_Event const & ev) override;
+	notify_result notify(SDL_Event const & ev) override;
 
 	void render() override;
 };

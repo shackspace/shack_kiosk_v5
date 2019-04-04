@@ -15,9 +15,9 @@ void module::enter()
 
 }
 
-void module::notify(SDL_Event const &)
+notify_result module::notify(SDL_Event const &)
 {
-
+	return failure;
 }
 
 void module::render()

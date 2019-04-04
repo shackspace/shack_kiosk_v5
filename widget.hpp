@@ -2,6 +2,7 @@
 #define WIDGET_HPP
 
 #include "kiosk.hpp"
+#include "module.hpp"
 
 struct widget
 {
@@ -9,7 +10,7 @@ struct widget
 
 	virtual ~widget();
 
-	virtual void notify(SDL_Event const & ev);
+	virtual notify_result notify(SDL_Event const & ev);
 
 	virtual void render();
 };

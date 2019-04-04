@@ -12,7 +12,7 @@ struct button : widget
 	SDL_Texture * icon = nullptr;
 	SDL_Color color = { 0x00, 0xBE, 0x00, 0xFF };
 
-	void notify(SDL_Event const & ev) override;
+	notify_result notify(SDL_Event const & ev) override;
 
 	void render() override;
 };

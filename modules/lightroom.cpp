@@ -61,7 +61,7 @@ void lightroom::init()
 	};
 }
 
-void lightroom::notify(SDL_Event const & ev)
+notify_result lightroom::notify(SDL_Event const & ev)
 {
 	SDL_Rect area = { 0, 0, 1280, 1024 };
 	area.x = (screen_size.x - area.w) / 2;
@@ -71,18 +71,23 @@ void lightroom::notify(SDL_Event const & ev)
 	{
 		SDL_Point pt { ev.button.x - area.x, ev.button.y - area.y };
 
+		bool any = false;
 		for(auto & sw : switch_config)
 		{
 			bool toggle = false;
 			for(auto const & rect : sw.rects)
 				toggle |= SDL_PointInRect(&pt, &rect);
 			sw.is_on ^= toggle;
+			any |= toggle;
 		}
+
+		if(any)
+			return success;
 
 		// light_config = (light_config + 1) % 16;
 	}
 
-	gui_module::notify(ev);
+	return gui_module::notify(ev);
 }
 
 void lightroom::render()
