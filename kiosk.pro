@@ -9,11 +9,14 @@ QMAKE_CXXFLAGS += -std=c++17
 QMAKE_LFLAGS += -std=c++17
 LIBS += -lstdc++fs
 
-PACKAGES = sdl2 SDL2_image
+PACKAGES = SDL2_image
 
 QMAKE_CFLAGS   += $$system("pkg-config --cflags $$PACKAGES | sed 's|-I|-isystem |g'")
 QMAKE_CXXFLAGS += $$system("pkg-config --cflags $$PACKAGES | sed 's|-I|-isystem |g'")
 QMAKE_LFLAGS   += $$system("pkg-config --libs   $$PACKAGES")
+
+INCLUDEPATH += /home/felix/projects/SDL/include
+LIBS += /home/felix/projects/SDL/build/libSDL2.a
 
 SOURCES += \
     main.cpp \

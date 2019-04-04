@@ -7,13 +7,14 @@
 struct lightroom : gui_module
 {
 	struct switch_t {
-		uint8_t mask;
+		uint8_t bitnum;
 		std::vector<SDL_Rect> rects;
 		bool is_on = false;
 		double power = 0.0;
 	};
 
-	std::array<SDL_Texture*, 16> backgrounds;
+	SDL_Texture* background;
+	std::array<SDL_Texture*, 4> foregrounds;
 	SDL_Texture * switch_background;
 	std::array<SDL_Texture*, 8> switches;
 

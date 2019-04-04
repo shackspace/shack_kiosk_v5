@@ -16,7 +16,7 @@ void screensaver::init()
 
 void screensaver::next_effect()
 {
-	effect = rand() % 6;
+	effect = rand() % 7;
 }
 
 void screensaver::enter()
@@ -189,6 +189,39 @@ void screensaver::render()
 				rect.x = (sx - rect.w) / 2;
 			}
 			break;
+		}
+
+		case 6: // slicer
+		{
+			if(t < 1)
+			{
+				double ampl = sin(PI * t);
+				double shacky = sin(31.34 * t);
+
+				for(int i = 0; i < rect.h; i++)
+				{
+					SDL_Rect dstrect = rect;
+					dstrect.y += i;
+					dstrect.h = 1;
+					dstrect.x += 30.0 * ampl * sin(shacky) * sin(0.035 * i);
+
+					SDL_Rect srcrect = dstrect;
+					srcrect.x = 0;
+					srcrect.y = i;
+
+					SDL_RenderCopy(
+						renderer,
+						logo,
+						&srcrect,
+						&dstrect
+					);
+				}
+				return; // IMPORTANT
+			}
+			else
+			{
+				break;
+			}
 		}
 	}
 

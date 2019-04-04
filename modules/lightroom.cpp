@@ -8,25 +8,29 @@ void lightroom::init()
 {
 	add_back_button();
 
-	backgrounds =
+	background = IMG_LoadTexture(renderer, (resource_root / "lightroom" / "zone0000.png" ).c_str());
+	foregrounds =
 	{
-	  IMG_LoadTexture(renderer, (resource_root / "lightroom" / "zone0000.png" ).c_str()),
 	  IMG_LoadTexture(renderer, (resource_root / "lightroom" / "zone0001.png" ).c_str()),
 	  IMG_LoadTexture(renderer, (resource_root / "lightroom" / "zone0010.png" ).c_str()),
-	  IMG_LoadTexture(renderer, (resource_root / "lightroom" / "zone0011.png" ).c_str()),
 	  IMG_LoadTexture(renderer, (resource_root / "lightroom" / "zone0100.png" ).c_str()),
-	  IMG_LoadTexture(renderer, (resource_root / "lightroom" / "zone0101.png" ).c_str()),
-	  IMG_LoadTexture(renderer, (resource_root / "lightroom" / "zone0110.png" ).c_str()),
-	  IMG_LoadTexture(renderer, (resource_root / "lightroom" / "zone0111.png" ).c_str()),
 	  IMG_LoadTexture(renderer, (resource_root / "lightroom" / "zone1000.png" ).c_str()),
-	  IMG_LoadTexture(renderer, (resource_root / "lightroom" / "zone1001.png" ).c_str()),
-	  IMG_LoadTexture(renderer, (resource_root / "lightroom" / "zone1010.png" ).c_str()),
-	  IMG_LoadTexture(renderer, (resource_root / "lightroom" / "zone1011.png" ).c_str()),
-	  IMG_LoadTexture(renderer, (resource_root / "lightroom" / "zone1100.png" ).c_str()),
-	  IMG_LoadTexture(renderer, (resource_root / "lightroom" / "zone1101.png" ).c_str()),
-	  IMG_LoadTexture(renderer, (resource_root / "lightroom" / "zone1110.png" ).c_str()),
-	  IMG_LoadTexture(renderer, (resource_root / "lightroom" / "zone1111.png" ).c_str()),
 	};
+
+	auto const blendmode = SDL_ComposeCustomBlendMode(
+		SDL_BLENDFACTOR_SRC_ALPHA,
+		SDL_BLENDFACTOR_ONE,
+		SDL_BLENDOPERATION_MAXIMUM,
+		SDL_BLENDFACTOR_SRC_ALPHA,
+		SDL_BLENDFACTOR_ONE,
+		SDL_BLENDOPERATION_MAXIMUM
+	);
+	for(auto tex : foregrounds)
+	{
+		if(SDL_SetTextureBlendMode(tex, blendmode) < 0)
+			die("%s", SDL_GetError());
+		SDL_SetTextureAlphaMod(tex, 255);
+	}
 
 	switch_background = IMG_LoadTexture(renderer, (resource_root / "lightroom" / "switches.png" ).c_str());
 
@@ -46,14 +50,14 @@ void lightroom::init()
 
 	switch_config =
 	{
-	  switch_t { 0x01, { SDL_Rect { 72, 686, 418, 280 } } }, // unten links
-	  switch_t { 0x02, { SDL_Rect { 558, 516, 343, 210 } } }, // unten mitte
-	  switch_t { 0x02, { SDL_Rect { 943, 380, 302, 174 } } }, // unten rechts
-	  switch_t { 0x02, { SDL_Rect { 804, 304, 112, 87 }, SDL_Rect { 290, 420, 324, 171 } } }, // mitte
-	  switch_t { 0x08, { SDL_Rect { 650, 159, 248, 119 } } }, // hinten rechts
-	  switch_t { 0x08, { SDL_Rect { 552, 73, 232, 101 } } }, // ganz hinten rechts
-	  switch_t { 0x04, { SDL_Rect { 247, 152, 259, 114 } } }, // ganz hinten links
-	  switch_t { 0x04, { SDL_Rect { 325, 252, 281, 138 } } }, // hinten links
+	  switch_t { 0, { SDL_Rect { 72, 686, 418, 280 } } }, // unten links
+	  switch_t { 1, { SDL_Rect { 558, 516, 343, 210 } } }, // unten mitte
+	  switch_t { 1, { SDL_Rect { 943, 380, 302, 174 } } }, // unten rechts
+	  switch_t { 1, { SDL_Rect { 804, 304, 112, 87 }, SDL_Rect { 290, 420, 324, 171 } } }, // mitte
+	  switch_t { 3, { SDL_Rect { 650, 159, 248, 119 } } }, // hinten rechts
+	  switch_t { 3, { SDL_Rect { 552, 73, 232, 101 } } }, // ganz hinten rechts
+	  switch_t { 2, { SDL_Rect { 247, 152, 259, 114 } } }, // ganz hinten links
+	  switch_t { 2, { SDL_Rect { 325, 252, 281, 138 } } }, // hinten links
 	};
 }
 
@@ -83,20 +87,33 @@ void lightroom::notify(SDL_Event const & ev)
 
 void lightroom::render()
 {
+	std::array<double, 4> blendweights = { 0, 0, 0, 0 };
+
 	for(auto & sw : switch_config)
 	{
-		sw.power = std::clamp(sw.power + 2.0 * (sw.is_on ? 1 : -1) * time_step, 0.0, 1.0);
-	}
+		sw.power = std::clamp(sw.power + 4.0 * (sw.is_on ? 1 : -1) * time_step, 0.0, 1.0);
 
-	uint8_t light_config = 0;
-	for(auto const & sw : switch_config)
-		light_config |= (sw.is_on ? sw.mask : 0);
+		blendweights[sw.bitnum] = std::max(
+			blendweights[sw.bitnum],
+			sw.power
+		);
+	}
 
 	SDL_Rect area = { 0, 0, 1280, 1024 };
 	area.x = (screen_size.x - area.w) / 2;
 	area.y = (screen_size.y - area.h) / 2;
 
-	SDL_RenderCopy(renderer, backgrounds.at(light_config), nullptr, &area);
+	// Fill background with "default pattern"
+	SDL_RenderCopy(renderer, background, nullptr, &area);
+	for(size_t i = 0; i < blendweights.size(); i++)
+	{
+		auto tex = foregrounds.at(i);
+		auto const gray = uint8_t(std::clamp(255.0 * blendweights[i], 0.0, 255.0));
+		SDL_SetTextureColorMod(tex, gray, gray, gray);
+		SDL_RenderCopy(renderer, tex, nullptr, &area);
+	}
+
+	// override the background image with 100% black switches
 	SDL_RenderCopy(renderer, switch_background, nullptr, &area);
 
 	int a;

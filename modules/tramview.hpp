@@ -5,9 +5,11 @@
 
 struct tramview : gui_module
 {
+	SDL_Texture * background;
+
 	void init() override;
 
-	void layout() override;
+	void render() override;
 };
 
 #endif // TRAMVIEW_HPP

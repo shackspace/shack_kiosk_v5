@@ -71,6 +71,19 @@ int main()
 	if(renderer == nullptr)
 		die("Failed to create renderer: %s", SDL_GetError());
 
+	{
+		SDL_RendererInfo info;
+		if(SDL_GetRendererInfo(renderer, &info) < 0)
+			die("Failed to query renderer info: %s", SDL_GetError());
+		fprintf(stdout,
+			"Renderer: %s\n"
+			"Max. Texture Size: %d*%d\n",
+			info.name,
+			info.max_texture_width,
+			info.max_texture_height
+		);
+	}
+
 	splash_icon = IMG_LoadTexture(renderer, (resource_root / "splash.png").c_str());
 	if(splash_icon == nullptr)
 		die("Failed to load splash.png: %s", SDL_GetError());
@@ -80,16 +93,16 @@ int main()
 	if(home_icon == nullptr)
 		die("Failed to load home.png: %s", SDL_GetError());
 
+	// preload all resources
 	module::get<screensaver>();
 	module::get<mainmenu>();
 	module::get<lightroom>();
 	module::get<tramview>();
 
+	// then activate screensaver as initial screen
 	module::activate<screensaver>();
 
 	std::vector<splash> splashes;
-
-	double transition_progress = 0.0;
 
 	SDL_Texture * frontbuffer = nullptr;
 	SDL_Texture * backbuffer = nullptr;
@@ -129,12 +142,19 @@ int main()
 
 	recreate_rendertargets();
 
-	int pixel_transition_matrix[40][50];
+	int pixel_transition_matrix[20][25];
 	for(auto & row  : pixel_transition_matrix)
 		for(auto & value : row)
 			value = rand() % 64;
 
-	int current_transition = 2;
+	int current_transition;
+	double transition_progress;
+	auto const next_transition = [&]()
+	{
+		current_transition = rand() % 3;
+		transition_progress = 0.0;
+	};
+	next_transition();
 
 	auto const startup = high_resolution_clock::now();
 	auto last_frame = startup;
@@ -235,14 +255,14 @@ int main()
 
 				case 2: // pixels
 				{
-					int w = screen_size.x / 50;
-					int h = screen_size.y / 40;
+					int w = screen_size.x / 25;
+					int h = screen_size.y / 20;
 
 					int progress = 64 * transition_progress;
 
-					for(int x = 0; x < 50; x++)
+					for(int x = 0; x < 25; x++)
 					{
-						for(int y = 0; y < 40; y++)
+						for(int y = 0; y < 20; y++)
 						{
 							SDL_Rect pos = { w * x, h * y, w, h };
 
@@ -260,7 +280,7 @@ int main()
 
 			if(transition_progress >= 1.0)
 			{
-				current_transition = rand() % 3;
+				next_transition();
 				previous_module = nullptr;
 			}
 		}
