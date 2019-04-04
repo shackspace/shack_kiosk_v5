@@ -21,7 +21,10 @@ LIBS += /home/felix/projects/SDL/build/libSDL2.a
 INCLUDEPATH += /home/felix/projects/SDL_image
 LIBS += /home/felix/projects/SDL_image/.libs/libSDL2_image.a
 
-LIBS += -pthread -ldl
+LIBS += -pthread -ldl  -lcurl
+
+include(/home/felix/projects/xqlib/pri/stb.pri)
+include(/home/felix/projects/xqlib/pri/json.pri)
 
 SOURCES += \
     main.cpp \
@@ -32,7 +35,8 @@ SOURCES += \
     widget.cpp \
     widgets/button.cpp \
     modules/lightroom.cpp \
-    modules/tramview.cpp
+    modules/tramview.cpp \
+    http_client.cpp
 
 HEADERS += \
     modules/screensaver.hpp \
@@ -43,4 +47,5 @@ HEADERS += \
     widget.hpp \
     widgets/button.hpp \
     modules/lightroom.hpp \
-    modules/tramview.hpp
+    modules/tramview.hpp \
+    http_client.hpp

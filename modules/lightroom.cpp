@@ -2,8 +2,73 @@
 #include "mainmenu.hpp"
 #include "widgets/button.hpp"
 
+#include "http_client.hpp"
+
 #include <algorithm>
 #include <glm/glm.hpp>
+#include <thread>
+#include <mutex>
+#include <queue>
+#include <nlohmann/json.hpp>
+
+static std::mutex commands_mutex;
+static std::queue<std::tuple<int,bool>> commands;
+
+static void query_thread()
+{
+	using nlohmann::json;
+	http_client client;
+
+	client.set_headers({
+		{ "Content-Type", "application/json" },
+		{ "Access-Control-Allow-Origin", "*" },
+	});
+
+	while(true)
+	{
+		auto const lroom = module::get<lightroom>();
+
+		//*/
+		for(auto & sw : lroom->switch_config)
+		{
+			auto data = client.transfer(
+				client.get,
+				"http://openhab.shack/lounge/" + std::to_string(sw.group_index)
+			);
+			if(not data)
+				continue;
+			auto cfg = json::parse(data->begin(), data->end());
+
+			sw.is_on = (cfg["state"] == "on");
+		}
+		//*/
+
+		for(size_t i = 0; i < 100; i++)
+		{
+			if(std::lock_guard _ { commands_mutex }; not commands.empty())
+			{
+				auto cmd = commands.front();
+				json payload = { {  "state", std::get<1>(cmd) ? "on" : "off" } };
+
+				auto string = payload.dump();
+
+				auto success = client.transfer(
+					client.put,
+					"http://openhab.shack/lounge/" + std::to_string(std::get<0>(cmd)),
+					ro_buffer<const std::byte> { reinterpret_cast<std::byte const *>(string.data()), string.size() }
+				);
+				if(not success)
+					fprintf(stderr, "i failed hard.\n");
+				else
+					fprintf(stderr, "%.*s\n", success->size(), success->data());
+				fflush(stderr);
+
+				commands.pop();
+			}
+			std::this_thread::sleep_for(std::chrono::milliseconds(1));
+		}
+	}
+}
 
 void lightroom::init()
 {
@@ -51,15 +116,16 @@ void lightroom::init()
 
 	switch_config =
 	{
-	  switch_t { 0, { SDL_Rect { 72, 686, 418, 280 } } }, // unten links
-	  switch_t { 1, { SDL_Rect { 558, 516, 343, 210 } } }, // unten mitte
-	  switch_t { 1, { SDL_Rect { 943, 380, 302, 174 } } }, // unten rechts
-	  switch_t { 1, { SDL_Rect { 804, 304, 112, 87 }, SDL_Rect { 290, 420, 324, 171 } } }, // mitte
-	  switch_t { 3, { SDL_Rect { 650, 159, 248, 119 } } }, // hinten rechts
-	  switch_t { 3, { SDL_Rect { 552, 73, 232, 101 } } }, // ganz hinten rechts
-	  switch_t { 2, { SDL_Rect { 247, 152, 259, 114 } } }, // ganz hinten links
-	  switch_t { 2, { SDL_Rect { 325, 252, 281, 138 } } }, // hinten links
+	  switch_t { 0, 8, { SDL_Rect { 72, 686, 418, 280 } } }, // unten links
+	  switch_t { 1, 7, { SDL_Rect { 558, 516, 343, 210 } } }, // unten mitte
+	  switch_t { 1, 6, { SDL_Rect { 943, 380, 302, 174 } } }, // unten rechts
+	  switch_t { 1, 5, { SDL_Rect { 804, 304, 112, 87 }, SDL_Rect { 290, 420, 324, 171 } } }, // mitte
+	  switch_t { 3, 3, { SDL_Rect { 650, 159, 248, 119 } } }, // hinten rechts
+	  switch_t { 3, 1, { SDL_Rect { 552, 73, 232, 101 } } }, // ganz hinten rechts
+	  switch_t { 2, 2, { SDL_Rect { 247, 152, 259, 114 } } }, // ganz hinten links
+	  switch_t { 2, 4, { SDL_Rect { 325, 252, 281, 138 } } }, // hinten links
 	};
+	std::thread(query_thread).detach();
 }
 
 notify_result lightroom::notify(SDL_Event const & ev)
@@ -73,13 +139,20 @@ notify_result lightroom::notify(SDL_Event const & ev)
 		SDL_Point pt { ev.button.x - area.x, ev.button.y - area.y };
 
 		bool any = false;
-		for(auto & sw : switch_config)
+		for(size_t i = 0; i < switch_config.size(); i++)
 		{
+			auto & sw = switch_config.at(i);
 			bool toggle = false;
 			for(auto const & rect : sw.rects)
 				toggle |= SDL_PointInRect(&pt, &rect);
 			sw.is_on ^= toggle;
 			any |= toggle;
+
+			if(toggle)
+			{
+				std::lock_guard _ { commands_mutex };
+				commands.emplace(sw.group_index, sw.is_on);
+			}
 		}
 
 		if(any)

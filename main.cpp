@@ -250,7 +250,6 @@ int main()
 
 		auto const start_time = high_resolution_clock::now();
 
-		previous_module = nullptr;
 		if(previous_module != nullptr)
 		{
 			SDL_SetRenderTarget(renderer, backbuffer);
@@ -350,6 +349,8 @@ int main()
 			SDL_RenderClear(renderer);
 			current_module->render();
 
+			SDL_SetTextureBlendMode(frontbuffer, SDL_BLENDMODE_NONE);
+
 			SDL_SetRenderTarget(renderer, nullptr);
 			SDL_SetRenderDrawColor(renderer, 0xFF, 0x00, 0xFF, 0xFF);
 			SDL_RenderClear(renderer);
@@ -384,7 +385,10 @@ int main()
 
 		auto const end_time = high_resolution_clock::now();
 
-		fprintf(stdout, "%ld µs\n", duration_cast<microseconds>(end_time - start_time).count());
+		auto const frame_time = duration_cast<microseconds>(end_time - start_time).count();
+
+		if(frame_time >= 16000)
+			fprintf(stdout, "%f ms\n", frame_time / 1000.0 );
 	}
 
 	SDL_DestroyRenderer(renderer);

@@ -8,6 +8,7 @@ struct lightroom : gui_module
 {
 	struct switch_t {
 		uint8_t bitnum;
+		int group_index;
 		std::vector<SDL_Rect> rects;
 		bool is_on = false;
 		double power = 0.0;
