@@ -93,8 +93,8 @@ void lightroom::init()
 	);
 	for(auto tex : foregrounds)
 	{
-		if(SDL_SetTextureBlendMode(tex, blendmode) < 0)
-			die("%s", SDL_GetError());
+		//if(SDL_SetTextureBlendMode(tex, blendmode) < 0)
+		//	die("%s", SDL_GetError());
 		SDL_SetTextureAlphaMod(tex, 255);
 	}
 
