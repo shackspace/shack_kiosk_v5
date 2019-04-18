@@ -190,16 +190,16 @@ void lightroom::render()
 
 	// Fill background with "default pattern"
 	SDL_RenderCopy(renderer, background, nullptr, &area);
-	for(size_t i = 0; i < blendweights.size(); i++)
-	{
-		auto tex = foregrounds.at(i);
-		auto const gray = uint8_t(std::clamp(255.0 * blendweights[i], 0.0, 255.0));
-		SDL_SetTextureColorMod(tex, gray, gray, gray);
-		SDL_RenderCopy(renderer, tex, nullptr, &area);
-	}
+//	for(size_t i = 0; i < blendweights.size(); i++)
+//	{
+//		auto tex = foregrounds.at(i);
+//		auto const gray = uint8_t(std::clamp(255.0 * blendweights[i], 0.0, 255.0));
+//		SDL_SetTextureColorMod(tex, gray, gray, gray);
+//		SDL_RenderCopy(renderer, tex, nullptr, &area);
+//	}
 
 	// override the background image with 100% black switches
-	SDL_RenderCopy(renderer, switch_background, nullptr, &area);
+	// SDL_RenderCopy(renderer, switch_background, nullptr, &area);
 
 	for(size_t i = 0; i < 8; i++)
 	{

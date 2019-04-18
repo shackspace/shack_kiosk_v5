@@ -2,6 +2,7 @@
 #include "widgets/button.hpp"
 #include "modules/lightroom.hpp"
 #include "modules/tramview.hpp"
+#include "modules/powerview.hpp"
 
 namespace
 {
@@ -40,7 +41,7 @@ void mainmenu::init()
 	center_widgets.push_back(set<mainmenu>(add<button>(), *col++, "bottle-wine.png"));
 	center_widgets.push_back(set<mainmenu>(add<button>(), *col++, "information.png"));
 
-	center_widgets.push_back(set<mainmenu>(add<button>(), *col++, "flash.png"));
+	center_widgets.push_back(set<powerview>(add<button>(), *col++, "flash.png"));
 	center_widgets.push_back(set<mainmenu>(add<button>(), *col++, "volume-high.png"));
 	center_widgets.push_back(set<mainmenu>(add<button>(), *col++, "cellphone-key.png"));
 	center_widgets.push_back(set<mainmenu>(add<button>(), *col++, "alert.png"));

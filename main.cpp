@@ -3,6 +3,7 @@
 #include "modules/mainmenu.hpp"
 #include "modules/lightroom.hpp"
 #include "modules/tramview.hpp"
+#include "modules/powerview.hpp"
 
 #include <SDL.h>
 #include <SDL_image.h>
@@ -87,7 +88,7 @@ int main()
 		);
 	}
 
-	SDL_ShowCursor(0);
+	SDL_ShowCursor(1);
 
 	splash_icon = IMG_LoadTexture(renderer, (resource_root / "splash.png").c_str());
 	if(splash_icon == nullptr)
@@ -103,6 +104,7 @@ int main()
 	module::get<mainmenu>();
 	module::get<lightroom>();
 	module::get<tramview>();
+	module::get<powerview>();
 
 	// then activate screensaver as initial screen
 	module::activate<screensaver>();

@@ -10,21 +10,7 @@ QMAKE_LFLAGS += -std=c++17
 LIBS += -lstdc++fs
 CONFIG += static
 
-#PACKAGES = SDL2_image
-#QMAKE_CFLAGS   += $$system("pkg-config --cflags $$PACKAGES | sed 's|-I|-isystem |g'")
-#QMAKE_CXXFLAGS += $$system("pkg-config --cflags $$PACKAGES | sed 's|-I|-isystem |g'")
-#QMAKE_LFLAGS   += $$system("pkg-config --libs   $$PACKAGES")
-
-#INCLUDEPATH += /home/felix/projects/SDL/include
-#LIBS += /home/felix/projects/SDL/build/libSDL2.a
-
-#INCLUDEPATH += /home/felix/projects/SDL_image
-#LIBS += /home/felix/projects/SDL_image/.libs/libSDL2_image.a
-
 LIBS += -pthread -ldl  -lcurl
-
-#include(/home/felix/projects/xqlib/pri/stb.pri)
-#include(/home/felix/projects/xqlib/pri/json.pri)
 
 INCLUDEPATH += $$quote($$PWD/json/single_include/)
 DEPENDPATH  += $$quote($$PWD/json/single_include/)
@@ -36,7 +22,6 @@ QMAKE_CXXFLAGS += $$system(pkg-config --cflags sdl2 SDL2_image)
 
 LIBS += $$system(pkg-config --libs sdl2 SDL2_image)
 
-
 SOURCES += \
     main.cpp \
     modules/screensaver.cpp \
@@ -47,7 +32,8 @@ SOURCES += \
     widgets/button.cpp \
     modules/lightroom.cpp \
     modules/tramview.cpp \
-    http_client.cpp
+    http_client.cpp \
+    modules/powerview.cpp
 
 HEADERS += \
     modules/screensaver.hpp \
@@ -59,4 +45,5 @@ HEADERS += \
     widgets/button.hpp \
     modules/lightroom.hpp \
     modules/tramview.hpp \
-    http_client.hpp
+    http_client.hpp \
+    modules/powerview.hpp
