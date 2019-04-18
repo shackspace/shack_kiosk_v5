@@ -87,6 +87,8 @@ int main()
 		);
 	}
 
+	SDL_ShowCursor(0);
+
 	splash_icon = IMG_LoadTexture(renderer, (resource_root / "splash.png").c_str());
 	if(splash_icon == nullptr)
 		die("Failed to load splash.png: %s", SDL_GetError());
