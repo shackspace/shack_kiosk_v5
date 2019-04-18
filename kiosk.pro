@@ -1,5 +1,5 @@
 TEMPLATE = app
-CONFIG += console c++11
+CONFIG += console c++17
 CONFIG -= app_bundle
 CONFIG -= qt
 
@@ -15,16 +15,27 @@ CONFIG += static
 #QMAKE_CXXFLAGS += $$system("pkg-config --cflags $$PACKAGES | sed 's|-I|-isystem |g'")
 #QMAKE_LFLAGS   += $$system("pkg-config --libs   $$PACKAGES")
 
-INCLUDEPATH += /home/felix/projects/SDL/include
-LIBS += /home/felix/projects/SDL/build/libSDL2.a
+#INCLUDEPATH += /home/felix/projects/SDL/include
+#LIBS += /home/felix/projects/SDL/build/libSDL2.a
 
-INCLUDEPATH += /home/felix/projects/SDL_image
-LIBS += /home/felix/projects/SDL_image/.libs/libSDL2_image.a
+#INCLUDEPATH += /home/felix/projects/SDL_image
+#LIBS += /home/felix/projects/SDL_image/.libs/libSDL2_image.a
 
 LIBS += -pthread -ldl  -lcurl
 
-include(/home/felix/projects/xqlib/pri/stb.pri)
-include(/home/felix/projects/xqlib/pri/json.pri)
+#include(/home/felix/projects/xqlib/pri/stb.pri)
+#include(/home/felix/projects/xqlib/pri/json.pri)
+
+INCLUDEPATH += $$quote($$PWD/json/single_include/)
+DEPENDPATH  += $$quote($$PWD/json/single_include/)
+
+INCLUDEPATH += $$quote($$PWD/stb)
+DEPENDPATH  += $$quote($$PWD/stb)
+
+QMAKE_CXXFLAGS += $$system(pkg-config --cflags sdl2 SDL2_image)
+
+LIBS += $$system(pkg-config --libs sdl2 SDL2_image)
+
 
 SOURCES += \
     main.cpp \
