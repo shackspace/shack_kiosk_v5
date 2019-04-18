@@ -37,9 +37,15 @@ static void query_thread()
 			);
 			if(not data)
 				continue;
-			auto cfg = json::parse(data->begin(), data->end());
+			try
+			{
+				auto cfg = json::parse(data->begin(), data->end());
+				sw.is_on = (cfg["state"] == "on");
+			}
+			catch(...)
+			{
 
-			sw.is_on = (cfg["state"] == "on");
+			}
 		}
 		//*/
 

@@ -24,7 +24,7 @@ http_client::http_client() noexcept :
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, this);
 	curl_easy_setopt(curl, CURLOPT_READDATA, this);
 	curl_easy_setopt(curl, CURLOPT_READFUNCTION, read_data);
-	curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+	// curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
 #pragma clang diagnostic pop
 }
 
