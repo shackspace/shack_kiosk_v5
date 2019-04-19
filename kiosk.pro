@@ -18,9 +18,9 @@ DEPENDPATH  += $$quote($$PWD/json/single_include/)
 INCLUDEPATH += $$quote($$PWD/stb)
 DEPENDPATH  += $$quote($$PWD/stb)
 
-QMAKE_CXXFLAGS += $$system(pkg-config --cflags sdl2 SDL2_image)
+QMAKE_CXXFLAGS += $$system(pkg-config --cflags sdl2 SDL2_image SDL2_ttf)
 
-LIBS += $$system(pkg-config --libs sdl2 SDL2_image)
+LIBS += $$system(pkg-config --libs sdl2 SDL2_image SDL2_ttf)
 
 SOURCES += \
     main.cpp \

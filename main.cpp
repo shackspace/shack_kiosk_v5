@@ -7,6 +7,7 @@
 
 #include <SDL.h>
 #include <SDL_image.h>
+#include <SDL_ttf.h>
 #include <chrono>
 #include <ctime>
 #include <algorithm>
@@ -55,6 +56,10 @@ int main()
 	if(IMG_Init(IMG_INIT_PNG) == 0)
 		die("Failed to initialize SDL_image: %s", IMG_GetError());
 	atexit(IMG_Quit);
+
+	if(TTF_Init() < 0)
+		die("Failed to initialize TTF_image: %s", TTF_GetError());
+	atexit(TTF_Quit);
 
 	window = SDL_CreateWindow(
 		"Kiosk v5.0",
@@ -240,7 +245,7 @@ int main()
 
 		auto const now = high_resolution_clock::now();
 
-		if((now - last_event) > seconds(15))
+		if((now - last_event) > minutes(5))
 			module::activate<screensaver>();
 
 		total_time = duration_cast<milliseconds>(now - startup).count() / 1000.0;

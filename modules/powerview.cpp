@@ -1,13 +1,40 @@
 #include "powerview.hpp"
 #include "http_client.hpp"
+#include "widgets/button.hpp"
 
 #include <thread>
 #include <mutex>
 #include <nlohmann/json.hpp>
 #include <vector>
+#include <atomic>
 
 namespace /* static */
 {
+	std::atomic_flag fast_reload;
+	std::atomic_int scroll_progress;
+
+	int zoom_level = 2;
+
+	struct zoomscale
+	{
+		int value;
+		char const * display;
+	};
+
+	zoomscale const zoom_scale[] =
+	{
+	  {   15, "30 sec" },
+	  {   30,  "1 min" },
+	  {   60,  "2 min" },
+	  {  150,  "5 min" },
+	  {  300, "10 min" },
+	  {  900, "30 min" },
+	  { 1800, "60 min" },
+	  { 3600,  "2 std" },
+	  { 9000,  "5 std" },
+	};
+	size_t const zoom_scale_cnt = sizeof(zoom_scale) / sizeof(*zoom_scale);
+
 	struct powernode
 	{
 		double time;
@@ -31,18 +58,21 @@ namespace /* static */
 
 		while(true)
 		{
-			std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+			for(size_t i = 0; (i < 2000) and fast_reload.test_and_set(); i++)
+			{
+				scroll_progress.store(i);
+				std::this_thread::sleep_for(std::chrono::milliseconds(1));
+			}
 
 			auto data = client.transfer(
 				client.get,
-				"http://glados.shack/siid/apps/powermeter.py?n=150"
+				"http://glados.shack/siid/apps/powermeter.py?n=" + std::to_string(zoom_scale[zoom_level].value)
 			);
 			if(not data)
 				continue;
 			try
 			{
 				auto cfg = json::parse(data->begin(), data->end());
-
 
 				auto l1 = cfg["L1.Power"];
 				auto l2 = cfg["L2.Power"];
@@ -84,6 +114,31 @@ void powerview::init()
 {
 	add_back_button();
 
+	{
+		auto * btn = add<button>();
+		btn->bounds = { 30, 824, 170, 170 };
+		btn->icon = IMG_LoadTexture(renderer, (resource_root / "icons" / "magnify-plus-outline.png" ).c_str());
+		btn->color = { 0x03, 0xA9, 0xF4, 255 };
+		btn->on_click = []() {
+			/* zoom in */
+			if(zoom_level > 0)
+				zoom_level--;
+			fast_reload.clear();
+		};
+	}
+	{
+		auto * btn = add<button>();
+		btn->bounds = { 30, 624, 170, 170 };
+		btn->icon = IMG_LoadTexture(renderer, (resource_root / "icons" / "magnify-minus-outline.png" ).c_str());
+		btn->color = { 0x03, 0xA9, 0xF4, 255 };
+		btn->on_click = [=]() {
+			/* zoom out */
+			if(zoom_level < (zoom_scale_cnt - 1))
+				zoom_level++;
+			fast_reload.clear();
+		};
+	}
+
 	std::thread(query_thread).detach();
 }
 
@@ -100,11 +155,18 @@ void powerview::render()
 
 	auto const get_point = [&](size_t idx, double f) -> SDL_Point
 	{
+		int const range = (nodes.size() - 2);
+		float pos = int(idx) - 1;
+
+		pos += (1.0f - float(scroll_progress) / 2000.0f);
+
 		return SDL_Point {
-			window.x + int((window.w * idx) / nodes.size()),
+			window.x + int(window.w * pos / range),
 			window.y + int(window.h * (1.0 - f / 3000.0)),
 		};
 	};
+
+	SDL_RenderSetClipRect(renderer, &window);
 
 	for(size_t i = 1; i < nodes.size(); i++)
 	{
@@ -133,5 +195,7 @@ void powerview::render()
 			);
 		}
 	}
+
+	SDL_RenderSetClipRect(renderer, nullptr);
 
 }
