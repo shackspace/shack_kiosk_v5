@@ -22,12 +22,17 @@ void button::render()
 	SDL_Rect border = bounds;
 	for(int i = 0; i < border_width; i++)
 	{
-		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0xFF);
+		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 		SDL_RenderDrawRect(renderer, &border);
 		border.x += 1;
 		border.y += 1;
 		border.w -= 2;
 		border.h -= 2;
+	}
+
+	if(background != nullptr)
+	{
+		SDL_RenderCopy(renderer, background, nullptr, &border);
 	}
 
 	if(icon != nullptr)
@@ -38,7 +43,7 @@ void button::render()
 		area.w -= 2 * icon_padding;
 		area.h -= 2 * icon_padding;
 
-		SDL_SetTextureColorMod(icon, 0, 0, 0);
+		SDL_SetTextureColorMod(icon, icon_tint.r, icon_tint.g, icon_tint.b);
 		SDL_RenderCopy(renderer, icon, nullptr, &area);
 	}
 }

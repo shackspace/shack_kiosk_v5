@@ -18,14 +18,99 @@ namespace
 
 	int constexpr item_padding = 50;
 
-	std::mutex keyholder_lock;
+	std::mutex keyholder_lock, volumio_lock;
 
 	bool is_open = false;
 	std::string keyholder = "???";
 
+	struct
+	{
+		bool playing;
+		std::string artist;
+		std::string song;
+		std::string album;
+		std::string albumart_uri;
+		std::vector<std::byte> coverdata;
+		bool coverart_dirty = false;
+	} volumio;
+
+	bool update_volumio(http_client & client)
+	{
+		auto data = client.transfer(
+			client.get,
+			"http://lounge.volumio.shack/api/v1/getstate"
+		);
+		if(not data)
+			return false;
+		try
+		{
+			// {
+			//  "status":"play",
+			//  "title":"Bliss on Mushrooms",
+			//  "artist":"Infected Mushroom, Bliss, Miyavi",
+			//  "album":"Head of NASA and the 2 Amish Boys",
+			//  "albumart":"https://i.scdn.co/image/770fcf37b83ad71be38fdfb39ac1278251fddca2",
+			//  "uri":"spotify:track:6rCcJf8p7z9QDlfzmBVSVl",
+			//  "trackType":"spotify",
+			//  "seek":68000,
+			//  "duration":571,
+			//  "samplerate":"44.1 KHz",
+			//  "bitdepth":"16 bit",
+			//  "channels":2,
+			//  "random":false,
+			//  "repeat":false,
+			//  "repeatSingle":false,
+			//  "consume":false,
+			//  "volume":88,
+			//  "mute":false,
+			//  "disableVolumeControl":false,
+			//  "stream":false,
+			//  "updatedb":false,
+			//  "volatile":true,
+			//  "service":"volspotconnect2"
+			// }
+			auto cfg = json::parse(data->begin(), data->end());
+
+			std::lock_guard _ { volumio_lock };
+			volumio.playing = cfg["status"] == "play";
+			volumio.song    = cfg["title"];
+			volumio.artist  = cfg["artist"];
+			volumio.album   = cfg["album"];
+
+			std::string uri = cfg["albumart"];
+			if(volumio.albumart_uri != uri)
+			{
+				volumio.albumart_uri = uri;
+				return true;
+			}
+		}
+		catch(...)
+		{
+
+		}
+		return false;
+	}
+
+	void update_albumart(http_client & client)
+	{
+		std::string uri;
+		{
+			std::lock_guard _ { volumio_lock };
+			uri = volumio.albumart_uri;
+		}
+		auto data = client.transfer(
+			client.get,
+			uri
+		);
+		if(not data)
+			return;
+
+		volumio.coverdata = *data;
+		volumio.coverart_dirty = true;
+	}
+
 	void update_keyholder(http_client & client)
 	{
-
 		auto data = client.transfer(
 			client.get,
 			"http://portal.shack:8088/status"
@@ -58,6 +143,11 @@ namespace
 		while(true)
 		{
 			update_keyholder(client);
+
+			if(update_volumio(client))
+			{
+				update_albumart(client);
+			}
 
 			std::this_thread::sleep_for(std::chrono::seconds(1));
 		}
@@ -97,11 +187,20 @@ void mainmenu::init()
 	center_widgets.push_back(set<mainmenu>(add<button>(), *col++, "information.png"));
 
 	center_widgets.push_back(set<powerview>(add<button>(), *col++, "flash.png"));
-	center_widgets.push_back(set<mainmenu>(add<button>(), *col++, "volume-high.png"));
+	center_widgets.push_back(songbutton = set<mainmenu>(add<button>(), *col++, "volume-high.png"));
 	center_widgets.push_back(set<mainmenu>(add<button>(), *col++, "cellphone-key.png"));
 	center_widgets.push_back(set<mainmenu>(add<button>(), *col++, "alert.png"));
 
+	volumio_albumart_none = songbutton->icon;
+
 	key_icon = IMG_LoadTexture(renderer, (resource_root / "icons" / "key-variant.png" ).c_str());
+
+	volumio_icon_song  = IMG_LoadTexture(renderer, (resource_root / "icons" / "volumio.png" ).c_str());
+	volumio_icon_artist  = IMG_LoadTexture(renderer, (resource_root / "icons" / "artist.png" ).c_str());
+	volumio_icon_album  = IMG_LoadTexture(renderer, (resource_root / "icons" / "album.png" ).c_str());
+	volumio_play  = IMG_LoadTexture(renderer, (resource_root / "icons" / "play.png" ).c_str());
+	volumio_pause = IMG_LoadTexture(renderer, (resource_root / "icons" / "pause.png" ).c_str());
+	volumio_next = IMG_LoadTexture(renderer, (resource_root / "icons" / "skip-next.png" ).c_str());
 
 	std::thread(loop).detach();
 }
@@ -148,6 +247,39 @@ void mainmenu::layout()
 
 void mainmenu::render()
 {
+	auto timestamp = std::time(nullptr);
+	std::tm const * const clock = std::localtime(&timestamp);
+
+	{
+		std::lock_guard _ { volumio_lock };
+		if(volumio.coverart_dirty and not volumio.coverdata.empty())
+		{
+			auto * tex = IMG_LoadTexture_RW(
+				renderer,
+				SDL_RWFromMem(volumio.coverdata.data(), volumio.coverdata.size()),
+				1
+			);
+			if(volumio_albumart != nullptr)
+				SDL_DestroyTexture(volumio_albumart);
+			volumio_albumart = tex;
+		}
+		volumio.coverart_dirty = false;
+	}
+
+	if(volumio_albumart != nullptr)
+	{
+			songbutton->background = volumio_albumart;
+			if(clock->tm_sec % 2)
+				songbutton->icon_tint = { 0xFF, 0xFF, 0xFF, 255 };
+			else
+				songbutton->icon_tint = { 0x00, 0x00, 0x00, 0xFF };
+	}
+	else
+	{
+		songbutton->background = nullptr;
+		songbutton->icon_tint = { 0x00, 0x00, 0x00, 0xFF };
+	}
+
 	auto const center_off = glm::ivec2(0, 100);
 	auto const center_size = screen_size - 2 * center_off;
 
@@ -163,15 +295,53 @@ void mainmenu::render()
 	  { 2 * bottom_bar.w / 3, bottom_bar.y, bottom_bar.w / 3, bottom_bar.h },
 	};
 
+	auto const add_margin = [](SDL_Rect r, int margin) -> SDL_Rect
+	{
+		return { r.x + margin, r.y + margin, r.w - 2*margin, r.h - 2*margin };
+	};
+
+	// Volumio Top Control
+	{
+		SDL_SetRenderDrawColor(renderer, 32, 32, 32, 0xFF);
+		SDL_RenderFillRect(
+			renderer,
+			&top_bar
+		);
+
+		std::string text;
+		SDL_Texture * icon;
+		{
+			std::lock_guard _ { volumio_lock };
+			switch((clock->tm_sec / 4) % 3)
+			{
+				case 0: text = volumio.song;   icon = volumio_icon_song; break;
+				case 1: text = volumio.album;  icon = volumio_icon_album; break;
+				case 2: text = volumio.artist; icon = volumio_icon_artist; break;
+			}
+		}
+
+		SDL_Rect left = top_bar;
+		left.w = left.h;
+		left = add_margin(left, 10);
+
+		SDL_RenderCopy(
+			renderer,
+			icon,
+			nullptr,
+			&left
+		);
+
+		rendering::big_font->render(
+			top_bar,
+			text
+		);
+	}
+
 	// Module 0
 	{
 		SDL_Rect left = bottom_modules[0];
 		left.w = left.h;
-
-		left.x += 10;
-		left.y += 10;
-		left.w -= 20;
-		left.h -= 20;
+		left = add_margin(left, 10);
 
 		SDL_Rect name = bottom_modules[0];
 		name.x += bottom_modules[0].h;
