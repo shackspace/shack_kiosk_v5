@@ -12,6 +12,7 @@ FontRenderer::FontRenderer(SDL_Renderer * renderer, TTF_Font * font) :
 
 FontRenderer::Text & FontRenderer::render(const std::string & what)
 {
+	auto str = what.empty() ? " " : what;
 	if(auto it = cache.find(what); it != cache.end())
 	{
 		if(it->second.last_use != generation)
@@ -24,7 +25,7 @@ FontRenderer::Text & FontRenderer::render(const std::string & what)
 	else
 	{
 		std::unique_ptr<SDL_Surface, decltype(&SDL_FreeSurface)> surface {
-			TTF_RenderUTF8_Blended(font.get(), what.c_str(), { 0xFF, 0xFF, 0xFF, 0xFF }),
+			TTF_RenderUTF8_Blended(font.get(), str.c_str(), { 0xFF, 0xFF, 0xFF, 0xFF }),
 			SDL_FreeSurface
 		};
 		assert(surface);

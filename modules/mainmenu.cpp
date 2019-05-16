@@ -12,6 +12,8 @@
 #include <vector>
 #include <atomic>
 
+#include <iostream>
+
 namespace
 {
 	using nlohmann::json;
@@ -73,13 +75,18 @@ namespace
 
 			std::lock_guard _ { volumio_lock };
 			volumio.playing = cfg["status"] == "play";
-			volumio.song    = cfg["title"];
-			volumio.artist  = cfg["artist"];
-			volumio.album   = cfg["album"];
+			volumio.song    = cfg.value("title", "-");
+			volumio.artist  = cfg.value("artist", "-");
 
-			std::string uri = cfg["albumart"];
+			if(cfg.at("album") != json{})
+				volumio.album   = cfg.value("album", "-");
+			else
+				volumio.album = "";
+
+			std::string uri = cfg.value("albumart", "");
 			if(volumio.albumart_uri != uri)
 			{
+				std::cout << uri << std::endl;
 				volumio.albumart_uri = uri;
 				return true;
 			}
@@ -98,14 +105,19 @@ namespace
 			std::lock_guard _ { volumio_lock };
 			uri = volumio.albumart_uri;
 		}
+
 		auto data = client.transfer(
 			client.get,
 			uri
 		);
-		if(not data)
-			return;
 
-		volumio.coverdata = *data;
+		std::lock_guard _ { volumio_lock };
+		if(not data)
+		{
+			volumio.coverdata.clear();
+		}
+		else
+			volumio.coverdata = *data;
 		volumio.coverart_dirty = true;
 	}
 
@@ -202,6 +214,47 @@ void mainmenu::init()
 	volumio_pause = IMG_LoadTexture(renderer, (resource_root / "icons" / "pause.png" ).c_str());
 	volumio_next = IMG_LoadTexture(renderer, (resource_root / "icons" / "skip-next.png" ).c_str());
 
+	auto * nextbutton = add<button>();
+	nextbutton->bounds = { 1280 - 90, 10, 80, 80 };
+	nextbutton->icon = volumio_next;
+	nextbutton->on_click = [&]() {
+		http_client client;
+		client.set_headers({
+			{ "Content-Type", "application/json" },
+			{ "Access-Control-Allow-Origin", "*" },
+		});
+		client.transfer(
+			client.get,
+			"http://lounge.volumio.shack/api/v1/commands/?cmd=next"
+		);
+	};
+
+
+	playpausebutton = add<button>();
+	playpausebutton->bounds = { 1280 - 90 - 100, 10, 80, 80 };
+	playpausebutton->icon = volumio_play;
+	playpausebutton->on_click = [&]() {
+		http_client client;
+		client.set_headers({
+			{ "Content-Type", "application/json" },
+			{ "Access-Control-Allow-Origin", "*" },
+		});
+
+		bool play = false;
+		{
+			std::lock_guard _ { volumio_lock };
+			play = not volumio.playing;
+		}
+
+		std::string method = play ? "play" : "pause";
+
+		client.transfer(
+			client.get,
+			"http://lounge.volumio.shack/api/v1/commands/?cmd=" + method
+		);
+
+	};
+
 	std::thread(loop).detach();
 }
 
@@ -237,12 +290,6 @@ void mainmenu::layout()
 
 		}
 	}
-
-	SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
-	SDL_RenderFillRect(renderer, &top_bar);
-
-	SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-	SDL_RenderFillRect(renderer, &bottom_bar);
 }
 
 void mainmenu::render()
@@ -250,23 +297,34 @@ void mainmenu::render()
 	auto timestamp = std::time(nullptr);
 	std::tm const * const clock = std::localtime(&timestamp);
 
+	bool volumio_playing;
 	{
 		std::lock_guard _ { volumio_lock };
-		if(volumio.coverart_dirty and not volumio.coverdata.empty())
+
+		if(volumio.playing)
+			playpausebutton->icon = volumio_pause;
+		else
+			playpausebutton->icon = volumio_play;
+
+		if(volumio.coverart_dirty)
 		{
-			auto * tex = IMG_LoadTexture_RW(
-				renderer,
-				SDL_RWFromMem(volumio.coverdata.data(), volumio.coverdata.size()),
-				1
-			);
 			if(volumio_albumart != nullptr)
 				SDL_DestroyTexture(volumio_albumart);
-			volumio_albumart = tex;
+			volumio_albumart = nullptr;
+			if(not volumio.coverdata.empty())
+			{
+				volumio_albumart = IMG_LoadTexture_RW(
+					renderer,
+					SDL_RWFromMem(volumio.coverdata.data(), volumio.coverdata.size()),
+					1
+				);
+			}
 		}
 		volumio.coverart_dirty = false;
+		volumio_playing = volumio.playing;
 	}
 
-	if(volumio_albumart != nullptr)
+	if(volumio_playing and (volumio_albumart != nullptr))
 	{
 			songbutton->background = volumio_albumart;
 			if(clock->tm_sec % 2)
@@ -286,6 +344,13 @@ void mainmenu::render()
 	SDL_Rect const top_bar = { 0, 0, screen_size.x, center_off.y };
 	SDL_Rect const bottom_bar = { 0, screen_size.y - center_off.y - 1, screen_size.x, center_off.y };
 
+
+	SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
+	SDL_RenderFillRect(renderer, &top_bar);
+
+	SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+	SDL_RenderFillRect(renderer, &bottom_bar);
+
 	gui_module::render();
 
 	SDL_Rect bottom_modules[] =
@@ -302,12 +367,6 @@ void mainmenu::render()
 
 	// Volumio Top Control
 	{
-		SDL_SetRenderDrawColor(renderer, 32, 32, 32, 0xFF);
-		SDL_RenderFillRect(
-			renderer,
-			&top_bar
-		);
-
 		std::string text;
 		SDL_Texture * icon;
 		{

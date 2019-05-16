@@ -19,6 +19,7 @@ struct mainmenu : gui_module
 	SDL_Texture * volumio_next;
 
 	button * songbutton;
+	button * playpausebutton;
 
 	SDL_Texture * volumio_albumart_none = nullptr;
 	SDL_Texture * volumio_albumart = nullptr;
