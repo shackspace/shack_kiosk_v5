@@ -3,10 +3,65 @@
 #include "modules/lightroom.hpp"
 #include "modules/tramview.hpp"
 #include "modules/powerview.hpp"
+#include "http_client.hpp"
+#include "rendering.hpp"
+
+#include <thread>
+#include <mutex>
+#include <nlohmann/json.hpp>
+#include <vector>
+#include <atomic>
 
 namespace
 {
+	using nlohmann::json;
+
 	int constexpr item_padding = 50;
+
+	std::mutex keyholder_lock;
+
+	bool is_open = false;
+	std::string keyholder = "???";
+
+	void update_keyholder(http_client & client)
+	{
+
+		auto data = client.transfer(
+			client.get,
+			"http://portal.shack:8088/status"
+		);
+		if(not data)
+			return;
+		try
+		{
+			// {"status":"open","keyholder":"xq","timestamp":1558039501604}
+			auto cfg = json::parse(data->begin(), data->end());
+
+			std::lock_guard _ { keyholder_lock };
+			is_open = cfg["status"] == "open";
+			keyholder = cfg["keyholder"];
+		}
+		catch(...)
+		{
+
+		}
+	}
+
+	void loop()
+	{
+		http_client client;
+		client.set_headers({
+			{ "Content-Type", "application/json" },
+			{ "Access-Control-Allow-Origin", "*" },
+		});
+
+		while(true)
+		{
+			update_keyholder(client);
+
+			std::this_thread::sleep_for(std::chrono::seconds(1));
+		}
+	}
 }
 
 template<typename Target>
@@ -45,6 +100,10 @@ void mainmenu::init()
 	center_widgets.push_back(set<mainmenu>(add<button>(), *col++, "volume-high.png"));
 	center_widgets.push_back(set<mainmenu>(add<button>(), *col++, "cellphone-key.png"));
 	center_widgets.push_back(set<mainmenu>(add<button>(), *col++, "alert.png"));
+
+	key_icon = IMG_LoadTexture(renderer, (resource_root / "icons" / "key-variant.png" ).c_str());
+
+	std::thread(loop).detach();
 }
 
 void mainmenu::layout()
@@ -52,8 +111,8 @@ void mainmenu::layout()
 	auto const center_off = glm::ivec2(0, 100);
 	auto const center_size = screen_size - 2 * center_off;
 
-	SDL_Rect top_bar = { 0, 0, screen_size.x, center_off.y };
-	SDL_Rect bottom_bar = { 0, screen_size.y - center_off.y - 1, screen_size.x, center_off.y };
+	SDL_Rect const top_bar = { 0, 0, screen_size.x, center_off.y };
+	SDL_Rect const bottom_bar = { 0, screen_size.y - center_off.y - 1, screen_size.x, center_off.y };
 
 	// layout the middle part
 	{
@@ -85,4 +144,57 @@ void mainmenu::layout()
 
 	SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
 	SDL_RenderFillRect(renderer, &bottom_bar);
+}
+
+void mainmenu::render()
+{
+	auto const center_off = glm::ivec2(0, 100);
+	auto const center_size = screen_size - 2 * center_off;
+
+	SDL_Rect const top_bar = { 0, 0, screen_size.x, center_off.y };
+	SDL_Rect const bottom_bar = { 0, screen_size.y - center_off.y - 1, screen_size.x, center_off.y };
+
+	gui_module::render();
+
+	SDL_Rect bottom_modules[] =
+	{
+	  { 0 * bottom_bar.w / 3, bottom_bar.y, bottom_bar.w / 3, bottom_bar.h },
+	  { 1 * bottom_bar.w / 3, bottom_bar.y, bottom_bar.w / 3, bottom_bar.h },
+	  { 2 * bottom_bar.w / 3, bottom_bar.y, bottom_bar.w / 3, bottom_bar.h },
+	};
+
+	// Module 0
+	{
+		SDL_Rect left = bottom_modules[0];
+		left.w = left.h;
+
+		left.x += 10;
+		left.y += 10;
+		left.w -= 20;
+		left.h -= 20;
+
+		SDL_Rect name = bottom_modules[0];
+		name.x += bottom_modules[0].h;
+		name.w -= bottom_modules[0].h;
+
+		SDL_SetRenderDrawColor(renderer, 32, 32, 32, 0xFF);
+		SDL_RenderFillRect(
+			renderer,
+			&bottom_modules[0]
+		);
+
+		SDL_RenderCopy(
+			renderer,
+			key_icon,
+			nullptr,
+			&left
+		);
+		{
+			std::lock_guard _ { keyholder_lock };
+			rendering::big_font->render(
+				name,
+				keyholder
+			);
+		}
+	}
 }

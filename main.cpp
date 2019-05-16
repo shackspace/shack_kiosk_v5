@@ -409,11 +409,17 @@ int main()
 			splashes.end()
 		);
 
-		SDL_RenderPresent(renderer);
-
 		auto const end_time = high_resolution_clock::now();
 
 		auto const frame_time = duration_cast<microseconds>(end_time - start_time).count();
+
+		rendering::small_font->render(
+			{ 0, 0, 150, 50 },
+		  std::to_string(frame_time / 1000.0) + " ms",
+			FontRenderer::Top | FontRenderer::Left
+		);
+
+		SDL_RenderPresent(renderer);
 
 		if(frame_time >= 16000)
 			fprintf(stdout, "%f ms\n", frame_time / 1000.0 );
