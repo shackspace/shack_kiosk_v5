@@ -5,6 +5,10 @@
 #include "modules/tramview.hpp"
 #include "modules/powerview.hpp"
 
+#include "fontrenderer.hpp"
+
+#include "rendering.hpp"
+
 #include <SDL.h>
 #include <SDL_image.h>
 #include <SDL_ttf.h>
@@ -155,6 +159,21 @@ int main()
 	};
 
 	recreate_rendertargets();
+
+	rendering::big_font.emplace(
+		renderer,
+		TTF_OpenFont((resource_root / "fonts" / "Roboto-Regular.ttf" ).c_str(), 50)
+	);
+
+	rendering::medium_font.emplace(
+		renderer,
+		TTF_OpenFont((resource_root / "fonts" / "Roboto-Regular.ttf" ).c_str(), 24)
+	);
+
+	rendering::small_font.emplace(
+		renderer,
+		TTF_OpenFont((resource_root / "fonts" / "Roboto-Regular.ttf" ).c_str(), 12)
+	);
 
 	int pixel_transition_matrix[20][25];
 	for(auto & row  : pixel_transition_matrix)
@@ -398,6 +417,10 @@ int main()
 
 		if(frame_time >= 16000)
 			fprintf(stdout, "%f ms\n", frame_time / 1000.0 );
+
+		rendering::big_font->collect_garbage();
+		rendering::medium_font->collect_garbage();
+		rendering::small_font->collect_garbage();
 	}
 
 	SDL_DestroyRenderer(renderer);

@@ -2,6 +2,8 @@
 #include "http_client.hpp"
 #include "widgets/button.hpp"
 
+#include "rendering.hpp"
+
 #include <thread>
 #include <mutex>
 #include <nlohmann/json.hpp>
@@ -198,4 +200,69 @@ void powerview::render()
 
 	SDL_RenderSetClipRect(renderer, nullptr);
 
+	SDL_Rect rect { 20, 220, 180, 64 };
+
+	rendering::medium_font->render(
+		rect,
+		"Total:",
+		FontRenderer::Left | FontRenderer::Top,
+		{ 0x80, 0x80, 0x80, 0xFF }
+	);
+	rect.y += TTF_FontHeight(rendering::medium_font->font.get());
+
+	rendering::big_font->render(
+		rect,
+		std::to_string(int(nodes.back().total())) + " W",
+		FontRenderer::Center | FontRenderer::Top
+	);
+	rect.y += rect.h;
+
+	rendering::medium_font->render(
+		rect,
+		"L1:",
+		FontRenderer::Left | FontRenderer::Top,
+		{ 0x80, 0x80, 0x80, 0xFF }
+	);
+	rect.y += TTF_FontHeight(rendering::medium_font->font.get());
+
+	rendering::big_font->render(
+		rect,
+		std::to_string(int(nodes.back().phase[0])) + " W",
+		FontRenderer::Center | FontRenderer::Top,
+		{ 0xFF, 0x00, 0x00, 0xFF }
+	);
+	rect.y += rect.h;
+
+
+	rendering::medium_font->render(
+		rect,
+		"L2:",
+		FontRenderer::Left | FontRenderer::Top,
+		{ 0x80, 0x80, 0x80, 0xFF }
+	);
+	rect.y += TTF_FontHeight(rendering::medium_font->font.get());
+
+	rendering::big_font->render(
+		rect,
+		std::to_string(int(nodes.back().phase[1])) + " W",
+		FontRenderer::Center | FontRenderer::Top,
+		{ 0x00, 0xFF, 0x00, 0xFF }
+	);
+	rect.y += rect.h;
+
+
+	rendering::medium_font->render(
+		rect,
+		"L3:",
+		FontRenderer::Left | FontRenderer::Top,
+		{ 0x80, 0x80, 0x80, 0xFF }
+	);
+	rect.y += TTF_FontHeight(rendering::medium_font->font.get());
+
+	rendering::big_font->render(
+		rect,
+		std::to_string(int(nodes.back().phase[2])) + " W",
+		FontRenderer::Center | FontRenderer::Top,
+		{ 0x00, 0x00, 0xFF, 0xFF }
+	);
 }

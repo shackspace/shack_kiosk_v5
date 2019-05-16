@@ -23,6 +23,7 @@ QMAKE_CXXFLAGS += $$system(pkg-config --cflags sdl2 SDL2_image SDL2_ttf)
 LIBS += $$system(pkg-config --libs sdl2 SDL2_image SDL2_ttf)
 
 SOURCES += \
+    fontrenderer.cpp \
     main.cpp \
     modules/screensaver.cpp \
     module.cpp \
@@ -36,11 +37,13 @@ SOURCES += \
     modules/powerview.cpp
 
 HEADERS += \
+    fontrenderer.hpp \
     modules/screensaver.hpp \
     module.hpp \
     kiosk.hpp \
     modules/mainmenu.hpp \
     gui_module.hpp \
+    rendering.hpp \
     widget.hpp \
     widgets/button.hpp \
     modules/lightroom.hpp \
