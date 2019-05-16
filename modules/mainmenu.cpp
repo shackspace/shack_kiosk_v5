@@ -396,6 +396,21 @@ void mainmenu::render()
 		);
 	}
 
+	for(size_t i = 0; i < 3; i++)
+	{
+		SDL_SetRenderDrawColor(renderer, 32, 32, 32, 0xFF);
+		SDL_RenderFillRect(
+			renderer,
+			&bottom_modules[i]
+		);
+
+		SDL_SetRenderDrawColor(renderer, 8, 8, 8, 0xFF);
+		SDL_RenderDrawRect(
+			renderer,
+			&bottom_modules[i]
+		);
+	}
+
 	// Module 0
 	{
 		SDL_Rect left = bottom_modules[0];
@@ -406,12 +421,6 @@ void mainmenu::render()
 		name.x += bottom_modules[0].h;
 		name.w -= bottom_modules[0].h;
 
-		SDL_SetRenderDrawColor(renderer, 32, 32, 32, 0xFF);
-		SDL_RenderFillRect(
-			renderer,
-			&bottom_modules[0]
-		);
-
 		SDL_RenderCopy(
 			renderer,
 			key_icon,
@@ -421,7 +430,7 @@ void mainmenu::render()
 		{
 			std::lock_guard _ { keyholder_lock };
 			rendering::big_font->render(
-				name,
+				bottom_modules[0],
 				keyholder
 			);
 		}
