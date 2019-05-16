@@ -167,12 +167,12 @@ int main()
 
 	rendering::medium_font.emplace(
 		renderer,
-		TTF_OpenFont((resource_root / "fonts" / "Roboto-Regular.ttf" ).c_str(), 24)
+		TTF_OpenFont((resource_root / "fonts" / "Roboto-Regular.ttf" ).c_str(), 40)
 	);
 
 	rendering::small_font.emplace(
 		renderer,
-		TTF_OpenFont((resource_root / "fonts" / "Roboto-Regular.ttf" ).c_str(), 12)
+		TTF_OpenFont((resource_root / "fonts" / "Roboto-Regular.ttf" ).c_str(), 25)
 	);
 
 	int pixel_transition_matrix[20][25];

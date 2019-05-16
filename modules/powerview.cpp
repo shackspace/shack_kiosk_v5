@@ -146,6 +146,7 @@ void powerview::init()
 
 void powerview::render()
 {
+	SDL_Rect rect;
 	gui_module::render();
 
 	std::lock_guard _ { nodes_mutex };
@@ -155,16 +156,22 @@ void powerview::render()
 	SDL_SetRenderDrawColor(renderer, 32, 32, 32, 255);
 	SDL_RenderFillRect(renderer, &window);
 
+	double max = 0;
+	for(size_t i = 0; i < nodes.size(); i++)
+	{
+		max = std::max(max, nodes[i].total());
+	}
+
+	auto const max_power = 1000.0 * std::ceil(max / 1000.0);
+
 	auto const get_point = [&](size_t idx, double f) -> SDL_Point
 	{
 		int const range = (nodes.size() - 2);
 		float pos = int(idx) - 1;
 
-		pos += (1.0f - float(scroll_progress) / 2000.0f);
-
 		return SDL_Point {
 			window.x + int(window.w * pos / range),
-			window.y + int(window.h * (1.0 - f / 3000.0)),
+			window.y + int(window.h * (1.0 - f / max_power)),
 		};
 	};
 
@@ -200,15 +207,42 @@ void powerview::render()
 
 	SDL_RenderSetClipRect(renderer, nullptr);
 
-	SDL_Rect rect { 20, 220, 180, 64 };
+	{
+		int h = TTF_FontHeight(rendering::small_font->font.get());
 
+		for(int i = 1; i < (max_power / 1000); i++)
+		{
+			rect = { 240, int(get_point(0, 1000.0 * i).y - h/2), 65, h };
+
+			SDL_SetRenderDrawColor(renderer, 32, 32, 32, 0x80);
+			SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+			SDL_RenderFillRect(renderer, &rect);
+
+			rendering::small_font->render(
+				rect,
+				std::to_string(1000 * i),
+				FontRenderer::Middle | FontRenderer::Left
+			);
+		}
+	}
+
+	rect = { 240, 40, 200, 50 };
 	rendering::medium_font->render(
+		rect,
+		zoom_scale[zoom_level].display,
+		FontRenderer::Top | FontRenderer::Left
+	);
+
+
+	rect = { 20, 220, 180, 64 };
+
+	rendering::small_font->render(
 		rect,
 		"Total:",
 		FontRenderer::Left | FontRenderer::Top,
 		{ 0x80, 0x80, 0x80, 0xFF }
 	);
-	rect.y += TTF_FontHeight(rendering::medium_font->font.get());
+	rect.y += TTF_FontHeight(rendering::small_font->font.get());
 
 	rendering::big_font->render(
 		rect,
@@ -217,13 +251,13 @@ void powerview::render()
 	);
 	rect.y += rect.h;
 
-	rendering::medium_font->render(
+	rendering::small_font->render(
 		rect,
 		"L1:",
 		FontRenderer::Left | FontRenderer::Top,
 		{ 0x80, 0x80, 0x80, 0xFF }
 	);
-	rect.y += TTF_FontHeight(rendering::medium_font->font.get());
+	rect.y += TTF_FontHeight(rendering::small_font->font.get());
 
 	rendering::big_font->render(
 		rect,
@@ -234,13 +268,13 @@ void powerview::render()
 	rect.y += rect.h;
 
 
-	rendering::medium_font->render(
+	rendering::small_font->render(
 		rect,
 		"L2:",
 		FontRenderer::Left | FontRenderer::Top,
 		{ 0x80, 0x80, 0x80, 0xFF }
 	);
-	rect.y += TTF_FontHeight(rendering::medium_font->font.get());
+	rect.y += TTF_FontHeight(rendering::small_font->font.get());
 
 	rendering::big_font->render(
 		rect,
@@ -251,13 +285,13 @@ void powerview::render()
 	rect.y += rect.h;
 
 
-	rendering::medium_font->render(
+	rendering::small_font->render(
 		rect,
 		"L3:",
 		FontRenderer::Left | FontRenderer::Top,
 		{ 0x80, 0x80, 0x80, 0xFF }
 	);
-	rect.y += TTF_FontHeight(rendering::medium_font->font.get());
+	rect.y += TTF_FontHeight(rendering::small_font->font.get());
 
 	rendering::big_font->render(
 		rect,
