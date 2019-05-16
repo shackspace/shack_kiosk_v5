@@ -345,10 +345,10 @@ void mainmenu::render()
 	SDL_Rect const bottom_bar = { 0, screen_size.y - center_off.y - 1, screen_size.x, center_off.y };
 
 
-	SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
+	SDL_SetRenderDrawColor(renderer, 32, 32, 32, 255);
 	SDL_RenderFillRect(renderer, &top_bar);
 
-	SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+	SDL_SetRenderDrawColor(renderer, 32, 32, 32, 255);
 	SDL_RenderFillRect(renderer, &bottom_bar);
 
 	gui_module::render();
