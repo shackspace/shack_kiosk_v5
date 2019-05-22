@@ -6,6 +6,8 @@
 
 struct powerview : gui_module
 {
+	double total_power = 0.0;
+
 	void init() override;
 
 	void render() override;

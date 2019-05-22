@@ -10,6 +10,8 @@ struct mainmenu : gui_module
 	std::vector<widget*> center_widgets;
 
 	SDL_Texture * key_icon;
+	SDL_Texture * power_icon;
+	SDL_Texture * skull_icon;
 
 	SDL_Texture * volumio_icon_song;
 	SDL_Texture * volumio_icon_artist;
@@ -18,7 +20,7 @@ struct mainmenu : gui_module
 	SDL_Texture * volumio_pause;
 	SDL_Texture * volumio_next;
 
-	button * songbutton;
+	// button * songbutton;
 	button * playpausebutton;
 
 	SDL_Texture * volumio_albumart_none = nullptr;

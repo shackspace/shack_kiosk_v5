@@ -106,6 +106,11 @@ namespace
 			uri = volumio.albumart_uri;
 		}
 
+		if(not uri.empty() and (uri.at(0) == '/'))
+		{
+			uri = "http://lounge.volumio.shack" + uri;
+		}
+
 		auto data = client.transfer(
 			client.get,
 			uri
@@ -144,7 +149,7 @@ namespace
 		}
 	}
 
-	void loop()
+	[[noreturn]] void loop()
 	{
 		http_client client;
 		client.set_headers({
@@ -195,17 +200,20 @@ void mainmenu::init()
 
 	center_widgets.push_back(set<lightroom>(add<button>(), *col++, "lightbulb-on.png"));
 	center_widgets.push_back(set<tramview>(add<button>(), *col++, "tram.png"));
-	center_widgets.push_back(set<mainmenu>(add<button>(), *col++, "bottle-wine.png"));
-	center_widgets.push_back(set<mainmenu>(add<button>(), *col++, "information.png"));
+	// center_widgets.push_back(set<mainmenu>(add<button>(), *col++, "bottle-wine.png"));
+	// center_widgets.push_back(set<mainmenu>(add<button>(), *col++, "information.png"));
 
 	center_widgets.push_back(set<powerview>(add<button>(), *col++, "flash.png"));
-	center_widgets.push_back(songbutton = set<mainmenu>(add<button>(), *col++, "volume-high.png"));
-	center_widgets.push_back(set<mainmenu>(add<button>(), *col++, "cellphone-key.png"));
-	center_widgets.push_back(set<mainmenu>(add<button>(), *col++, "alert.png"));
+	// center_widgets.push_back(songbutton = set<mainmenu>(add<button>(), *col++, "volume-high.png"));
+	// center_widgets.push_back(set<mainmenu>(add<button>(), *col++, "cellphone-key.png"));
+	// center_widgets.push_back(set<mainmenu>(add<button>(), *col++, "alert.png"));
+	center_widgets.push_back(set<mainmenu>(add<button>(), *col++, "calendar-month.png"));
 
-	volumio_albumart_none = songbutton->icon;
+	// volumio_albumart_none = songbutton->icon;
 
 	key_icon = IMG_LoadTexture(renderer, (resource_root / "icons" / "key-variant.png" ).c_str());
+	power_icon = IMG_LoadTexture(renderer, (resource_root / "icons" / "flash.png" ).c_str());
+	skull_icon = IMG_LoadTexture(renderer, (resource_root / "icons" / "skull.png" ).c_str());
 
 	volumio_icon_song  = IMG_LoadTexture(renderer, (resource_root / "icons" / "volumio.png" ).c_str());
 	volumio_icon_artist  = IMG_LoadTexture(renderer, (resource_root / "icons" / "artist.png" ).c_str());
@@ -218,41 +226,46 @@ void mainmenu::init()
 	nextbutton->bounds = { 1280 - 90, 10, 80, 80 };
 	nextbutton->icon = volumio_next;
 	nextbutton->on_click = [&]() {
-		http_client client;
-		client.set_headers({
-			{ "Content-Type", "application/json" },
-			{ "Access-Control-Allow-Origin", "*" },
-		});
-		client.transfer(
-			client.get,
-			"http://lounge.volumio.shack/api/v1/commands/?cmd=next"
-		);
+		std::thread([]()
+		{
+			http_client client;
+			client.set_headers({
+				{ "Content-Type", "application/json" },
+				{ "Access-Control-Allow-Origin", "*" },
+			});
+			client.transfer(
+				client.get,
+				"http://lounge.volumio.shack/api/v1/commands/?cmd=next"
+			);
+		}).detach();
 	};
 
 
 	playpausebutton = add<button>();
 	playpausebutton->bounds = { 1280 - 90 - 100, 10, 80, 80 };
 	playpausebutton->icon = volumio_play;
-	playpausebutton->on_click = [&]() {
-		http_client client;
-		client.set_headers({
-			{ "Content-Type", "application/json" },
-			{ "Access-Control-Allow-Origin", "*" },
-		});
-
-		bool play = false;
+	playpausebutton->on_click = []() {
+		std::thread([]()
 		{
-			std::lock_guard _ { volumio_lock };
-			play = not volumio.playing;
-		}
+			http_client client;
+			client.set_headers({
+				{ "Content-Type", "application/json" },
+				{ "Access-Control-Allow-Origin", "*" },
+			});
 
-		std::string method = play ? "play" : "pause";
+			bool play = false;
+			{
+				std::lock_guard _ { volumio_lock };
+				play = not volumio.playing;
+			}
 
-		client.transfer(
-			client.get,
-			"http://lounge.volumio.shack/api/v1/commands/?cmd=" + method
-		);
+			std::string method = play ? "play" : "pause";
 
+			client.transfer(
+				client.get,
+				"http://lounge.volumio.shack/api/v1/commands/?cmd=" + method
+			);
+		}).detach();
 	};
 
 	std::thread(loop).detach();
@@ -324,19 +337,19 @@ void mainmenu::render()
 		volumio_playing = volumio.playing;
 	}
 
-	if(volumio_playing and (volumio_albumart != nullptr))
-	{
-			songbutton->background = volumio_albumart;
-			if(clock->tm_sec % 2)
-				songbutton->icon_tint = { 0xFF, 0xFF, 0xFF, 255 };
-			else
-				songbutton->icon_tint = { 0x00, 0x00, 0x00, 0xFF };
-	}
-	else
-	{
-		songbutton->background = nullptr;
-		songbutton->icon_tint = { 0x00, 0x00, 0x00, 0xFF };
-	}
+//	if(volumio_playing and (volumio_albumart != nullptr))
+//	{
+//			songbutton->background = volumio_albumart;
+//			if(clock->tm_sec % 2)
+//				songbutton->icon_tint = { 0xFF, 0xFF, 0xFF, 255 };
+//			else
+//				songbutton->icon_tint = { 0x00, 0x00, 0x00, 0xFF };
+//	}
+//	else
+//	{
+//		songbutton->background = nullptr;
+//		songbutton->icon_tint = { 0x00, 0x00, 0x00, 0xFF };
+//	}
 
 	auto const center_off = glm::ivec2(0, 100);
 	auto const center_size = screen_size - 2 * center_off;
@@ -411,7 +424,7 @@ void mainmenu::render()
 		);
 	}
 
-	// Module 0
+	// Module 0 (Keyholder)
 	{
 		SDL_Rect left = bottom_modules[0];
 		left.w = left.h;
@@ -432,6 +445,50 @@ void mainmenu::render()
 			rendering::big_font->render(
 				bottom_modules[0],
 				keyholder
+			);
+		}
+	}
+
+	// Module 2 (Power)
+	{
+		SDL_Rect left = bottom_modules[2];
+		left.w = left.h;
+		left = add_margin(left, 10);
+
+		SDL_Rect name = bottom_modules[2];
+		name.x += bottom_modules[1].h;
+		name.w -= bottom_modules[1].h;
+
+		auto const power = module::get<powerview>()->total_power;
+
+		if(power >= 0)
+		{
+			SDL_RenderCopy(
+				renderer,
+				power_icon,
+				nullptr,
+				&left
+			);
+
+			rendering::big_font->render(
+				bottom_modules[2],
+				std::to_string(int(power)) + " W"
+			);
+		}
+		else
+		{
+			SDL_RenderCopy(
+				renderer,
+				skull_icon,
+				nullptr,
+				&left
+			);
+
+			rendering::big_font->render(
+				bottom_modules[1],
+				"GlaDOS",
+				FontRenderer::Middle | FontRenderer::Center,
+				{ 0xFF, 0x00, 0x00, 0xFF }
 			);
 		}
 	}

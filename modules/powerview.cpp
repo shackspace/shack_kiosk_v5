@@ -103,6 +103,10 @@ namespace /* static */
 					nodes = new_nodes;
 				}
 
+				if(new_nodes.size() > 0)
+				  module::get<powerview>()->total_power = new_nodes.back().total();
+				else
+					module::get<powerview>()->total_power = -1.0;
 			}
 			catch(...)
 			{
@@ -233,70 +237,71 @@ void powerview::render()
 		FontRenderer::Top | FontRenderer::Left
 	);
 
+	if(nodes.size() > 0)
+	{
+		rect = { 20, 220, 180, 64 };
 
-	rect = { 20, 220, 180, 64 };
+		rendering::small_font->render(
+			rect,
+			"Total:",
+			FontRenderer::Left | FontRenderer::Top,
+			{ 0x80, 0x80, 0x80, 0xFF }
+		);
+		rect.y += TTF_FontHeight(rendering::small_font->font.get());
 
-	rendering::small_font->render(
-		rect,
-		"Total:",
-		FontRenderer::Left | FontRenderer::Top,
-		{ 0x80, 0x80, 0x80, 0xFF }
-	);
-	rect.y += TTF_FontHeight(rendering::small_font->font.get());
+		rendering::big_font->render(
+			rect,
+			std::to_string(int(nodes.back().total())) + " W",
+			FontRenderer::Center | FontRenderer::Top
+		);
+		rect.y += rect.h;
 
-	rendering::big_font->render(
-		rect,
-		std::to_string(int(nodes.back().total())) + " W",
-		FontRenderer::Center | FontRenderer::Top
-	);
-	rect.y += rect.h;
+		rendering::small_font->render(
+			rect,
+			"L1:",
+			FontRenderer::Left | FontRenderer::Top,
+			{ 0x80, 0x80, 0x80, 0xFF }
+		);
+		rect.y += TTF_FontHeight(rendering::small_font->font.get());
 
-	rendering::small_font->render(
-		rect,
-		"L1:",
-		FontRenderer::Left | FontRenderer::Top,
-		{ 0x80, 0x80, 0x80, 0xFF }
-	);
-	rect.y += TTF_FontHeight(rendering::small_font->font.get());
-
-	rendering::big_font->render(
-		rect,
-		std::to_string(int(nodes.back().phase[0])) + " W",
-		FontRenderer::Center | FontRenderer::Top,
-		{ 0xFF, 0x00, 0x00, 0xFF }
-	);
-	rect.y += rect.h;
-
-
-	rendering::small_font->render(
-		rect,
-		"L2:",
-		FontRenderer::Left | FontRenderer::Top,
-		{ 0x80, 0x80, 0x80, 0xFF }
-	);
-	rect.y += TTF_FontHeight(rendering::small_font->font.get());
-
-	rendering::big_font->render(
-		rect,
-		std::to_string(int(nodes.back().phase[1])) + " W",
-		FontRenderer::Center | FontRenderer::Top,
-		{ 0x00, 0xFF, 0x00, 0xFF }
-	);
-	rect.y += rect.h;
+		rendering::big_font->render(
+			rect,
+			std::to_string(int(nodes.back().phase[0])) + " W",
+			FontRenderer::Center | FontRenderer::Top,
+			{ 0xFF, 0x00, 0x00, 0xFF }
+		);
+		rect.y += rect.h;
 
 
-	rendering::small_font->render(
-		rect,
-		"L3:",
-		FontRenderer::Left | FontRenderer::Top,
-		{ 0x80, 0x80, 0x80, 0xFF }
-	);
-	rect.y += TTF_FontHeight(rendering::small_font->font.get());
+		rendering::small_font->render(
+			rect,
+			"L2:",
+			FontRenderer::Left | FontRenderer::Top,
+			{ 0x80, 0x80, 0x80, 0xFF }
+		);
+		rect.y += TTF_FontHeight(rendering::small_font->font.get());
 
-	rendering::big_font->render(
-		rect,
-		std::to_string(int(nodes.back().phase[2])) + " W",
-		FontRenderer::Center | FontRenderer::Top,
-		{ 0x00, 0x00, 0xFF, 0xFF }
-	);
+		rendering::big_font->render(
+			rect,
+			std::to_string(int(nodes.back().phase[1])) + " W",
+			FontRenderer::Center | FontRenderer::Top,
+			{ 0x00, 0xFF, 0x00, 0xFF }
+		);
+		rect.y += rect.h;
+
+		rendering::small_font->render(
+			rect,
+			"L3:",
+			FontRenderer::Left | FontRenderer::Top,
+			{ 0x80, 0x80, 0x80, 0xFF }
+		);
+		rect.y += TTF_FontHeight(rendering::small_font->font.get());
+
+		rendering::big_font->render(
+			rect,
+			std::to_string(int(nodes.back().phase[2])) + " W",
+			FontRenderer::Center | FontRenderer::Top,
+			{ 0x00, 0x00, 0xFF, 0xFF }
+		);
+	}
 }

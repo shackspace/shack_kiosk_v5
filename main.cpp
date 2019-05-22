@@ -6,7 +6,6 @@
 #include "modules/powerview.hpp"
 
 #include "fontrenderer.hpp"
-
 #include "rendering.hpp"
 
 #include <SDL.h>
@@ -184,7 +183,8 @@ int main()
 	double transition_progress;
 	auto const next_transition = [&]()
 	{
-		current_transition = rand() % 3;
+		// current_transition = rand() % 3;
+		current_transition = 1; // slider
 		transition_progress = 0.0;
 	};
 	next_transition();
