@@ -71,7 +71,10 @@ namespace /* static */
 				"http://glados.shack/siid/apps/powermeter.py?n=" + std::to_string(zoom_scale[zoom_level].value)
 			);
 			if(not data)
+			{
+				module::get<powerview>()->total_power = -1.0;
 				continue;
+			}
 			try
 			{
 				auto cfg = json::parse(data->begin(), data->end());
@@ -110,7 +113,7 @@ namespace /* static */
 			}
 			catch(...)
 			{
-
+				module::get<powerview>()->total_power = -1.0;
 			}
 		}
 	}

@@ -485,7 +485,7 @@ void mainmenu::render()
 			);
 
 			rendering::big_font->render(
-				bottom_modules[1],
+				bottom_modules[2],
 				"GlaDOS",
 				FontRenderer::Middle | FontRenderer::Center,
 				{ 0xFF, 0x00, 0x00, 0xFF }
