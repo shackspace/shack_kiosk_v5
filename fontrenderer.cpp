@@ -10,7 +10,7 @@ FontRenderer::FontRenderer(SDL_Renderer * renderer, TTF_Font * font) :
 
 }
 
-FontRenderer::Text & FontRenderer::render(const std::string & what)
+FontRenderer::Text const & FontRenderer::render(const std::string & what) const
 {
 	auto str = what.empty() ? " " : what;
 	if(auto it = cache.find(what); it != cache.end())
@@ -44,9 +44,9 @@ FontRenderer::Text & FontRenderer::render(const std::string & what)
 	}
 }
 
-void FontRenderer::render(const SDL_Rect & target, const std::string & what, int align, SDL_Color const & color)
+void FontRenderer::render(const SDL_Rect & target, const std::string & what, int align, SDL_Color const & color) const
 {
-	Text & str = render(what);
+	Text const & str = render(what);
 
 	SDL_Rect dst, src;
 	dst.w = std::min(str.width, target.w);

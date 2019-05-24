@@ -10,7 +10,7 @@ QMAKE_LFLAGS += -std=c++17
 LIBS += -lstdc++fs
 CONFIG += static
 
-LIBS += -pthread -ldl  -lcurl
+LIBS += -pthread -ldl
 
 INCLUDEPATH += $$quote($$PWD/json/single_include/)
 DEPENDPATH  += $$quote($$PWD/json/single_include/)
@@ -18,13 +18,14 @@ DEPENDPATH  += $$quote($$PWD/json/single_include/)
 INCLUDEPATH += $$quote($$PWD/stb)
 DEPENDPATH  += $$quote($$PWD/stb)
 
-QMAKE_CXXFLAGS += $$system(pkg-config --cflags sdl2 SDL2_image SDL2_ttf)
+QMAKE_CXXFLAGS += $$system(pkg-config --cflags sdl2 SDL2_image SDL2_ttf libcurl)
 
-LIBS += $$system(pkg-config --libs sdl2 SDL2_image SDL2_ttf)
+LIBS += $$system(pkg-config --libs sdl2 SDL2_image SDL2_ttf libcurl)
 
 SOURCES += \
     fontrenderer.cpp \
     main.cpp \
+    modules/mateview.cpp \
     modules/screensaver.cpp \
     module.cpp \
     modules/mainmenu.cpp \
@@ -38,6 +39,7 @@ SOURCES += \
 
 HEADERS += \
     fontrenderer.hpp \
+    modules/mateview.hpp \
     modules/screensaver.hpp \
     module.hpp \
     kiosk.hpp \

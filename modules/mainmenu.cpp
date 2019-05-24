@@ -3,6 +3,7 @@
 #include "modules/lightroom.hpp"
 #include "modules/tramview.hpp"
 #include "modules/powerview.hpp"
+#include "modules/mateview.hpp"
 #include "http_client.hpp"
 #include "rendering.hpp"
 
@@ -200,14 +201,14 @@ void mainmenu::init()
 
 	center_widgets.push_back(set<lightroom>(add<button>(), *col++, "lightbulb-on.png"));
 	center_widgets.push_back(set<tramview>(add<button>(), *col++, "tram.png"));
-	// center_widgets.push_back(set<mainmenu>(add<button>(), *col++, "bottle-wine.png"));
+	center_widgets.push_back(set<mateview>(add<button>(), *col++, "bottle-wine.png"));
 	// center_widgets.push_back(set<mainmenu>(add<button>(), *col++, "information.png"));
 
 	center_widgets.push_back(set<powerview>(add<button>(), *col++, "flash.png"));
 	// center_widgets.push_back(songbutton = set<mainmenu>(add<button>(), *col++, "volume-high.png"));
 	// center_widgets.push_back(set<mainmenu>(add<button>(), *col++, "cellphone-key.png"));
 	// center_widgets.push_back(set<mainmenu>(add<button>(), *col++, "alert.png"));
-	center_widgets.push_back(set<mainmenu>(add<button>(), *col++, "calendar-month.png"));
+	// center_widgets.push_back(set<mainmenu>(add<button>(), *col++, "calendar-month.png"));
 
 	// volumio_albumart_none = songbutton->icon;
 

@@ -4,6 +4,7 @@
 #include "modules/lightroom.hpp"
 #include "modules/tramview.hpp"
 #include "modules/powerview.hpp"
+#include "modules/mateview.hpp"
 
 #include "fontrenderer.hpp"
 #include "rendering.hpp"
@@ -68,7 +69,7 @@ int main()
 		"Kiosk v5.0",
 		0, 0,
 		1280, 1024,
-		SDL_WINDOW_FULLSCREEN_DESKTOP
+		SDL_WINDOW_SHOWN // SDL_WINDOW_FULLSCREEN_DESKTOP
 	);
 	if(window == nullptr)
 		die("Failed to create window: %s", SDL_GetError());
@@ -113,6 +114,7 @@ int main()
 	module::get<lightroom>();
 	module::get<tramview>();
 	module::get<powerview>();
+	module::get<mateview>();
 
 	// then activate screensaver as initial screen
 	module::activate<screensaver>();

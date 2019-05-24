@@ -32,16 +32,20 @@ struct FontRenderer
 
 	SDL_Renderer * renderer;
 	std::unique_ptr<TTF_Font, decltype(&TTF_CloseFont)> font;
-	std::map<std::string, Text> cache;
+	mutable std::map<std::string, Text> cache;
 	size_t generation;
 
 	explicit FontRenderer(SDL_Renderer * renderer, TTF_Font * font);
 
-	Text & render(std::string const & what);
+	Text const & render(std::string const & what) const;
 
-	void render(SDL_Rect const & target, std::string const & what, int align = Middle | Center, SDL_Color const & color = { 0xFF, 0xFF, 0xFF, 0xFF });
+	void render(SDL_Rect const & target, std::string const & what, int align = Middle | Center, SDL_Color const & color = { 0xFF, 0xFF, 0xFF, 0xFF }) const;
 
 	void collect_garbage();
+
+	int height() const {
+		return TTF_FontHeight(font.get());
+	}
 };
 
 #endif // FONTRENDERER_HPP
