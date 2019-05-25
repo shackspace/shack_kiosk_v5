@@ -271,8 +271,8 @@ void mainmenu::layout()
 	auto const center_off = glm::ivec2(0, 100);
 	auto const center_size = screen_size - 2 * center_off;
 
-	SDL_Rect const top_bar = { 0, 0, screen_size.x, center_off.y };
-	SDL_Rect const bottom_bar = { 0, screen_size.y - center_off.y - 1, screen_size.x, center_off.y };
+	// SDL_Rect const top_bar = { 0, 0, screen_size.x, center_off.y };
+	// SDL_Rect const bottom_bar = { 0, screen_size.y - center_off.y - 1, screen_size.x, center_off.y };
 
 	// layout the middle part
 	{
@@ -295,7 +295,6 @@ void mainmenu::layout()
 			bounds.y = center_off.y + dy + size * y + item_padding;
 			bounds.w = size - item_padding;
 			bounds.h = size - item_padding;
-
 		}
 	}
 }
@@ -381,7 +380,7 @@ void mainmenu::render()
 	if(modules_cycling)
 	{
 		for(auto & mod : bottom_modules)
-			mod.x += int((1.0f - module_cycle_progress) * mod.w + 0.5f);
+			mod.x += int((1.0 - module_cycle_progress) * mod.w + 0.5);
 	}
 
 	// Volumio Top Control
@@ -395,6 +394,8 @@ void mainmenu::render()
 				case 0: text = info->song;   icon = volumio_icon_song; break;
 				case 1: text = info->album;  icon = volumio_icon_album; break;
 				case 2: text = info->artist; icon = volumio_icon_artist; break;
+				default:
+					abort();
 			}
 		}
 
@@ -437,18 +438,22 @@ void mainmenu::render()
 		&mainmenu::render_event_module,
 		&mainmenu::render_trash_module,
 		&mainmenu::render_keyholder_module,
-	};
-	auto const ren = [&](size_t index)
-	{
-		return renderers[(index + size_t(module_cycle)) % std::size(renderers)];
+	  &mainmenu::render_clock_module,
 	};
 
-	for(size_t i = 0; i < 3; i++)
+	auto const ren = [&](int index)
 	{
-		(this->*ren(i))(bottom_modules[i]);
+		while(index < 0)
+			index += std::size(renderers);
+		return renderers[size_t(index + module_cycle) % std::size(renderers)];
+	};
+
+	for(int i = 0; i < 3; i++)
+	{
+		(this->*ren(i))(bottom_modules[size_t(i)]);
 	}
 	(this->*ren(3))(bottom_modules[3]);
-	(this->*ren(3))(bottom_modules[4]);
+	(this->*ren(-1))(bottom_modules[4]);
 }
 
 void mainmenu::render_power_module(SDL_Rect module_rect)
@@ -532,5 +537,19 @@ void mainmenu::render_event_module(SDL_Rect module_rect)
 	rendering::big_font->render(
 		module_rect,
 		"Event-Info"
+	);
+}
+
+void mainmenu::render_clock_module(SDL_Rect module_rect)
+{
+	auto const now_t = std::time(nullptr);
+	std::tm const now = *std::localtime(&now_t);
+
+	char buffer[128];
+	snprintf(buffer, sizeof buffer, "%02d:%02d:%02d", now.tm_hour, now.tm_min, now.tm_sec);
+
+	rendering::big_font->render(
+		module_rect,
+		buffer
 	);
 }

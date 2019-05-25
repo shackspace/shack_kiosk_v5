@@ -37,7 +37,7 @@ struct mainmenu : gui_module
 
 	int module_cycle = 0;
 	bool modules_cycling = 0;
-	float module_cycle_progress = 0.0f;
+	double module_cycle_progress = 0.0;
 
 	void init() override;
 
@@ -49,6 +49,7 @@ struct mainmenu : gui_module
 	void render_keyholder_module(SDL_Rect module_rect);
 	void render_trash_module(SDL_Rect module_rect);
 	void render_event_module(SDL_Rect module_rect);
+	void render_clock_module(SDL_Rect module_rect);
 };
 
 #endif // MAINMENU_HPP
