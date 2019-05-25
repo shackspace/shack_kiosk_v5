@@ -4,6 +4,10 @@
 #include "gui_module.hpp"
 #include <array>
 
+//!
+//! Allows users to toggle the lights in the
+//! shack lounge.
+//!
 struct lightroom : gui_module
 {
 	struct switch_t {

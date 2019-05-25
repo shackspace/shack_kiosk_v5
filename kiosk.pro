@@ -25,6 +25,8 @@ LIBS += $$system(pkg-config --libs sdl2 SDL2_image SDL2_ttf libcurl)
 SOURCES += \
     fontrenderer.cpp \
     main.cpp \
+    modules/eventsview.cpp \
+    modules/infoview.cpp \
     modules/mateview.cpp \
     modules/screensaver.cpp \
     module.cpp \
@@ -39,6 +41,8 @@ SOURCES += \
 
 HEADERS += \
     fontrenderer.hpp \
+    modules/eventsview.hpp \
+    modules/infoview.hpp \
     modules/mateview.hpp \
     modules/screensaver.hpp \
     module.hpp \

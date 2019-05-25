@@ -3,6 +3,12 @@
 
 #include "module.hpp"
 
+//!
+//! Is fancy and wants attention.
+//!
+//! This module will be activated after about
+//! a minute of inactivity.
+//!
 struct screensaver : module
 {
 	int effect;

@@ -5,6 +5,15 @@
 
 struct button;
 
+//!
+//! Central menu of the kiosk.
+//!
+//! Allows going into submodules, also
+//! views some information about:
+//! - power use
+//! - who is keyholder
+//! - what music is currently playing
+//!
 struct mainmenu : gui_module
 {
 	std::vector<widget*> center_widgets;

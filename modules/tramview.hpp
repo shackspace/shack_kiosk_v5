@@ -3,6 +3,10 @@
 
 #include "gui_module.hpp"
 
+//!
+//! Shows the next four connections of
+//! tram and night bus routes.
+//!
 struct tramview : gui_module
 {
 	SDL_Texture * background;

@@ -5,6 +5,8 @@
 #include "modules/tramview.hpp"
 #include "modules/powerview.hpp"
 #include "modules/mateview.hpp"
+#include "modules/infoview.hpp"
+#include "modules/eventsview.hpp"
 
 #include "fontrenderer.hpp"
 #include "rendering.hpp"
@@ -115,6 +117,8 @@ int main()
 	module::get<tramview>();
 	module::get<powerview>();
 	module::get<mateview>();
+	module::get<infoview>();
+	module::get<eventsview>();
 
 	// then activate screensaver as initial screen
 	module::activate<screensaver>();
