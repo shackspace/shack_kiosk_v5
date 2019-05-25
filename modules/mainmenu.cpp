@@ -305,13 +305,12 @@ void mainmenu::render()
 	std::tm const * const clock = std::localtime(&timestamp);
 
 	module_cycle_progress += time_step;
-	while(module_cycle_progress >= 4.0f)
+	while(module_cycle_progress >= 4.0)
 	{
-		module_cycle_progress -= 4.0f;
+		module_cycle_progress -= 4.0;
 		module_cycle++;
 	}
-	modules_cycling = (module_cycle_progress <= 1.0f);
-
+	modules_cycling = (module_cycle_progress <= 1.0);
 
 	bool volumio_playing;
 	{
@@ -532,9 +531,43 @@ void mainmenu::render_keyholder_module(SDL_Rect module_rect)
 
 void mainmenu::render_trash_module(SDL_Rect module_rect)
 {
-	rendering::big_font->render(
-		module_rect,
-		"Müll-Info"
+	auto const [ top, bottom ] = split_vertical(module_rect, module_rect.h / 2);
+
+	auto const info = module::get<infoview>()->get_muell_info();
+
+	std::string what;
+	tm when;
+	switch((module_cycle / 8) % 3)
+	{
+		case 0:
+				what = "Restmüll";
+				when = info.restmuell;
+				break;
+		case 1:
+				what = "Papiermüll";
+				when = info.papiermuell;
+				break;
+		case 2:
+				what = "Gelber Sack";
+				when = info.gelber_sack;
+				break;
+		default:
+			return;
+	}
+
+	rendering::small_font->render(
+		top,
+		what,
+		FontRenderer::Bottom | FontRenderer::Center
+	);
+
+	char buffer[128];
+	snprintf(buffer, sizeof buffer, "%02d.%02d.%04d", when.tm_mday, 1 + when.tm_mon, 1900 + when.tm_year);
+
+	rendering::small_font->render(
+		bottom,
+		buffer,
+		FontRenderer::Top | FontRenderer::Center
 	);
 }
 

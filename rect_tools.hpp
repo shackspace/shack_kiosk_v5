@@ -34,4 +34,16 @@ auto inline split_horizontal(SDL_Rect rect, int diff)
 	return result;
 }
 
+auto inline split_vertical(SDL_Rect rect, int diff)
+{
+	SDL_Rect top, bottom;
+	top = rect;
+	bottom = rect;
+	top.h = diff;
+	bottom.y += diff;
+	bottom.h -= diff;
+	struct { SDL_Rect top, bottom; } result { top, bottom };
+	return result;
+}
+
 #endif // RECT_TOOLS_HPP

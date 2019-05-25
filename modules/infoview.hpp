@@ -12,9 +12,16 @@
 //!
 struct infoview : gui_module
 {
+	struct MuellInfo
+	{
+		tm papiermuell, restmuell, gelber_sack;
+	};
+
 	void init() override;
 
 	void render() override;
+
+	MuellInfo get_muell_info() const;
 };
 
 #endif // INFOVIEW_HPP
