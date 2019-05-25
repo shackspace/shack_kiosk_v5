@@ -35,11 +35,20 @@ struct mainmenu : gui_module
 	SDL_Texture * volumio_albumart_none = nullptr;
 	SDL_Texture * volumio_albumart = nullptr;
 
+	int module_cycle = 0;
+	bool modules_cycling = 0;
+	float module_cycle_progress = 0.0f;
+
 	void init() override;
 
 	void layout() override;
 
 	void render() override;
+
+	void render_power_module(SDL_Rect module_rect);
+	void render_keyholder_module(SDL_Rect module_rect);
+	void render_trash_module(SDL_Rect module_rect);
+	void render_event_module(SDL_Rect module_rect);
 };
 
 #endif // MAINMENU_HPP

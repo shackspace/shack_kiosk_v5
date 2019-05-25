@@ -36,6 +36,9 @@ public:
 
 	T *       operator->()       { return &value(); }
 	T const * operator->() const { return &value(); }
+
+	T &       operator= (T const & other) { return value() = other; }
+	T &       operator= (T && other)      { return value() = std::move(other); }
 };
 
 //!
@@ -50,6 +53,16 @@ private:
 	std::mutex mutex;
 public:
 	friend struct value_access<T>;
+
+	protected_value(T const & value = T { }) :
+	  value(value)
+	{
+	}
+
+	protected_value(T && value) :
+	  value(std::move(value))
+	{
+	}
 
 	value_access<T>       obtain()       { return value_access<T> { *this }; }
 	value_access<const T> obtain() const { return value_access<const T> { *this }; }

@@ -8,6 +8,8 @@
 #include "modules/eventsview.hpp"
 #include "http_client.hpp"
 #include "rendering.hpp"
+#include "rect_tools.hpp"
+#include "protected_value.hpp"
 
 #include <thread>
 #include <mutex>
@@ -23,12 +25,10 @@ namespace
 
 	int constexpr item_padding = 50;
 
-	std::mutex keyholder_lock, volumio_lock;
-
 	bool is_open = false;
-	std::string keyholder = "???";
+	protected_value<std::string> keyholder { "???" };
 
-	struct
+	struct VolumioInfo
 	{
 		bool playing;
 		std::string artist;
@@ -37,7 +37,9 @@ namespace
 		std::string albumart_uri;
 		std::vector<std::byte> coverdata;
 		bool coverart_dirty = false;
-	} volumio;
+	};
+
+	protected_value<VolumioInfo> volumio;
 
 	bool update_volumio(http_client & client)
 	{
@@ -76,23 +78,25 @@ namespace
 			// }
 			auto cfg = json::parse(data->begin(), data->end());
 
-			std::lock_guard _ { volumio_lock };
-			volumio.playing = cfg["status"] == "play";
-			volumio.song    = cfg.value("title", "-");
-			volumio.artist  = cfg.value("artist", "-");
+			bool changed_albumart = false;
+
+			VolumioInfo info;
+			info.playing = cfg["status"] == "play";
+			info.song    = cfg.value("title", "-");
+			info.artist  = cfg.value("artist", "-");
 
 			if(cfg.at("album") != json{})
-				volumio.album   = cfg.value("album", "-");
+				info.album   = cfg.value("album", "-");
 			else
-				volumio.album = "";
+				info.album = "";
 
 			std::string uri = cfg.value("albumart", "");
-			if(volumio.albumart_uri != uri)
-			{
-				std::cout << uri << std::endl;
-				volumio.albumart_uri = uri;
-				return true;
-			}
+			changed_albumart  =(info.albumart_uri != uri);
+			info.albumart_uri = uri;
+
+			volumio.obtain() = info;
+
+			return changed_albumart;
 		}
 		catch(...)
 		{
@@ -103,12 +107,7 @@ namespace
 
 	void update_albumart(http_client & client)
 	{
-		std::string uri;
-		{
-			std::lock_guard _ { volumio_lock };
-			uri = volumio.albumart_uri;
-		}
-
+		std::string uri = volumio.obtain()->albumart_uri;
 		if(not uri.empty() and (uri.at(0) == '/'))
 		{
 			uri = "http://lounge.volumio.shack" + uri;
@@ -119,14 +118,12 @@ namespace
 			uri
 		);
 
-		std::lock_guard _ { volumio_lock };
+		auto info = volumio.obtain();
 		if(not data)
-		{
-			volumio.coverdata.clear();
-		}
+			info->coverdata.clear();
 		else
-			volumio.coverdata = *data;
-		volumio.coverart_dirty = true;
+			info->coverdata = *data;
+		info->coverart_dirty = true;
 	}
 
 	void update_keyholder(http_client & client)
@@ -142,9 +139,8 @@ namespace
 			// {"status":"open","keyholder":"xq","timestamp":1558039501604}
 			auto cfg = json::parse(data->begin(), data->end());
 
-			std::lock_guard _ { keyholder_lock };
 			is_open = cfg["status"] == "open";
-			keyholder = cfg["keyholder"];
+			keyholder.obtain() = cfg["keyholder"];
 		}
 		catch(...)
 		{
@@ -258,13 +254,7 @@ void mainmenu::init()
 				{ "Access-Control-Allow-Origin", "*" },
 			});
 
-			bool play = false;
-			{
-				std::lock_guard _ { volumio_lock };
-				play = not volumio.playing;
-			}
-
-			std::string method = play ? "play" : "pause";
+			std::string method = volumio.obtain()->playing ? "play" : "pause";
 
 			client.transfer(
 				client.get,
@@ -315,31 +305,40 @@ void mainmenu::render()
 	auto timestamp = std::time(nullptr);
 	std::tm const * const clock = std::localtime(&timestamp);
 
+	module_cycle_progress += time_step;
+	while(module_cycle_progress >= 4.0f)
+	{
+		module_cycle_progress -= 4.0f;
+		module_cycle++;
+	}
+	modules_cycling = (module_cycle_progress <= 1.0f);
+
+
 	bool volumio_playing;
 	{
-		std::lock_guard _ { volumio_lock };
+		auto info = volumio.obtain();
 
-		if(volumio.playing)
+		if(info->playing)
 			playpausebutton->icon = volumio_pause;
 		else
 			playpausebutton->icon = volumio_play;
 
-		if(volumio.coverart_dirty)
+		if(info->coverart_dirty)
 		{
 			if(volumio_albumart != nullptr)
 				SDL_DestroyTexture(volumio_albumart);
 			volumio_albumart = nullptr;
-			if(not volumio.coverdata.empty())
+			if(not info->coverdata.empty())
 			{
 				volumio_albumart = IMG_LoadTexture_RW(
 					renderer,
-					SDL_RWFromMem(volumio.coverdata.data(), volumio.coverdata.size()),
+					SDL_RWFromMem(info->coverdata.data(), info->coverdata.size()),
 					1
 				);
 			}
 		}
-		volumio.coverart_dirty = false;
-		volumio_playing = volumio.playing;
+		info->coverart_dirty = false;
+		volumio_playing = info->playing;
 	}
 
 //	if(volumio_playing and (volumio_albumart != nullptr))
@@ -371,29 +370,31 @@ void mainmenu::render()
 
 	gui_module::render();
 
-	SDL_Rect bottom_modules[] =
+	std::array bottom_modules =
 	{
-	  { 0 * bottom_bar.w / 3, bottom_bar.y, bottom_bar.w / 3, bottom_bar.h },
-	  { 1 * bottom_bar.w / 3, bottom_bar.y, bottom_bar.w / 3, bottom_bar.h },
-	  { 2 * bottom_bar.w / 3, bottom_bar.y, bottom_bar.w / 3, bottom_bar.h },
+	  SDL_Rect {  0 * bottom_bar.w / 3, bottom_bar.y, bottom_bar.w / 3, bottom_bar.h },
+	  SDL_Rect {  1 * bottom_bar.w / 3, bottom_bar.y, bottom_bar.w / 3, bottom_bar.h },
+	  SDL_Rect {  2 * bottom_bar.w / 3, bottom_bar.y, bottom_bar.w / 3, bottom_bar.h },
+	  SDL_Rect {  3 * bottom_bar.w / 3, bottom_bar.y, bottom_bar.w / 3, bottom_bar.h },
+	  SDL_Rect { -1 * bottom_bar.w / 3, bottom_bar.y, bottom_bar.w / 3, bottom_bar.h },
 	};
-
-	auto const add_margin = [](SDL_Rect r, int margin) -> SDL_Rect
+	if(modules_cycling)
 	{
-		return { r.x + margin, r.y + margin, r.w - 2*margin, r.h - 2*margin };
-	};
+		for(auto & mod : bottom_modules)
+			mod.x += int((1.0f - module_cycle_progress) * mod.w + 0.5f);
+	}
 
 	// Volumio Top Control
 	{
 		std::string text;
 		SDL_Texture * icon;
 		{
-			std::lock_guard _ { volumio_lock };
+			auto info = volumio.obtain();
 			switch((clock->tm_sec / 4) % 3)
 			{
-				case 0: text = volumio.song;   icon = volumio_icon_song; break;
-				case 1: text = volumio.album;  icon = volumio_icon_album; break;
-				case 2: text = volumio.artist; icon = volumio_icon_artist; break;
+				case 0: text = info->song;   icon = volumio_icon_song; break;
+				case 1: text = info->album;  icon = volumio_icon_album; break;
+				case 2: text = info->artist; icon = volumio_icon_artist; break;
 			}
 		}
 
@@ -414,7 +415,7 @@ void mainmenu::render()
 		);
 	}
 
-	for(size_t i = 0; i < 3; i++)
+	for(size_t i = 0; i < bottom_modules.size(); i++)
 	{
 		SDL_SetRenderDrawColor(renderer, 32, 32, 32, 0xFF);
 		SDL_RenderFillRect(
@@ -429,72 +430,107 @@ void mainmenu::render()
 		);
 	}
 
-	// Module 0 (Keyholder)
+	using module_renderer = void (mainmenu::*)(SDL_Rect);
+	module_renderer renderers[] =
 	{
-		SDL_Rect left = bottom_modules[0];
-		left.w = left.h;
-		left = add_margin(left, 10);
+		&mainmenu::render_power_module,
+		&mainmenu::render_event_module,
+		&mainmenu::render_trash_module,
+		&mainmenu::render_keyholder_module,
+	};
+	auto const ren = [&](size_t index)
+	{
+		return renderers[(index + size_t(module_cycle)) % std::size(renderers)];
+	};
 
-		SDL_Rect name = bottom_modules[0];
-		name.x += bottom_modules[0].h;
-		name.w -= bottom_modules[0].h;
+	for(size_t i = 0; i < 3; i++)
+	{
+		(this->*ren(i))(bottom_modules[i]);
+	}
+	(this->*ren(3))(bottom_modules[3]);
+	(this->*ren(3))(bottom_modules[4]);
+}
 
+void mainmenu::render_power_module(SDL_Rect module_rect)
+{
+	SDL_Rect left = module_rect;
+	left.w = left.h;
+	left = add_margin(left, 10);
+
+	SDL_Rect name = module_rect;
+	name.x += module_rect.h;
+	name.w -= module_rect.h;
+
+	auto const power = module::get<powerview>()->total_power;
+
+	if(power >= 0)
+	{
 		SDL_RenderCopy(
 			renderer,
-			key_icon,
+			power_icon,
 			nullptr,
 			&left
 		);
-		{
-			std::lock_guard _ { keyholder_lock };
-			rendering::big_font->render(
-				bottom_modules[0],
-				keyholder
-			);
-		}
-	}
 
-	// Module 2 (Power)
+		rendering::big_font->render(
+			module_rect,
+			std::to_string(int(power)) + " W"
+		);
+	}
+	else
 	{
-		SDL_Rect left = bottom_modules[2];
-		left.w = left.h;
-		left = add_margin(left, 10);
+		SDL_RenderCopy(
+			renderer,
+			skull_icon,
+			nullptr,
+			&left
+		);
 
-		SDL_Rect name = bottom_modules[2];
-		name.x += bottom_modules[1].h;
-		name.w -= bottom_modules[1].h;
-
-		auto const power = module::get<powerview>()->total_power;
-
-		if(power >= 0)
-		{
-			SDL_RenderCopy(
-				renderer,
-				power_icon,
-				nullptr,
-				&left
-			);
-
-			rendering::big_font->render(
-				bottom_modules[2],
-				std::to_string(int(power)) + " W"
-			);
-		}
-		else
-		{
-			SDL_RenderCopy(
-				renderer,
-				skull_icon,
-				nullptr,
-				&left
-			);
-
-			rendering::big_font->render(
-				bottom_modules[2],
-				"GlaDOS",
-				FontRenderer::Middle | FontRenderer::Center,
-				{ 0xFF, 0x00, 0x00, 0xFF }
-			);
-		}
+		rendering::big_font->render(
+			module_rect,
+			"GlaDOS",
+			FontRenderer::Middle | FontRenderer::Center,
+			{ 0xFF, 0x00, 0x00, 0xFF }
+		);
 	}
+}
+
+void mainmenu::render_keyholder_module(SDL_Rect module_rect)
+{
+	SDL_Rect left = module_rect;
+	left.w = left.h;
+	left = add_margin(left, 10);
+
+	SDL_Rect name = module_rect;
+	name.x += module_rect.h;
+	name.w -= module_rect.h;
+
+	SDL_RenderCopy(
+		renderer,
+		key_icon,
+		nullptr,
+		&left
+	);
+	{
+		rendering::big_font->render(
+			module_rect,
+			*keyholder.obtain()
+		);
+	}
+}
+
+void mainmenu::render_trash_module(SDL_Rect module_rect)
+{
+	rendering::big_font->render(
+		module_rect,
+		"Müll-Info"
+	);
+}
+
+void mainmenu::render_event_module(SDL_Rect module_rect)
+{
+	rendering::big_font->render(
+		module_rect,
+		"Event-Info"
+	);
 }

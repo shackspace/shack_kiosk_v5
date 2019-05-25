@@ -50,6 +50,7 @@ HEADERS += \
     modules/mainmenu.hpp \
     gui_module.hpp \
     protected_value.hpp \
+    rect_tools.hpp \
     rendering.hpp \
     widget.hpp \
     widgets/button.hpp \

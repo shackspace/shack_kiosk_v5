@@ -72,6 +72,7 @@ void FontRenderer::render(const SDL_Rect & target, const std::string & what, int
 	src.y = (str.height - dst.h) / 2;
 
 	SDL_SetTextureColorMod(str.texture.get(), color.r, color.g, color.b);
+	SDL_SetTextureAlphaMod(str.texture.get(), color.a);
 
 	SDL_RenderCopy(
 		renderer,

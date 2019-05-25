@@ -2,6 +2,7 @@
 #include "http_client.hpp"
 #include "rendering.hpp"
 #include "protected_value.hpp"
+#include "rect_tools.hpp"
 
 #include <thread>
 #include <mutex>
@@ -34,6 +35,14 @@ namespace
 		);
 		if(not raw)
 		{
+			*events.obtain() = {
+			    Event
+					{
+						.title = "Keine Verbindung zu events.shackspace.de",
+						.start = std::time(nullptr),
+						.end = std::time(nullptr),
+					}
+			};
 			return;
 		}
 		try
@@ -136,12 +145,17 @@ void eventsview::render()
 
 	auto const & font = *rendering::small_font;
 
-	SDL_Rect rect = { 220, 10, 1050, 50 };
+	SDL_Rect rect = { 220, 10, 1050, 70 };
 	bool odd = false;
+	auto const now = std::time(nullptr);
 	for(auto const & ev : *events.obtain())
 	{
 		SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-		SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, odd ? 0x10 : 0x20);
+
+		if((std::difftime(now, ev.start) > 0) and (std::difftime(ev.end, now) < 0))
+			SDL_SetRenderDrawColor(renderer, 0x00, 0xFF, 0x00, odd ? 0x10 : 0x20);
+		else
+			SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, odd ? 0x10 : 0x20);
 		SDL_RenderFillRect(renderer, &rect);
 
 		auto const tm = *std::localtime(&ev.start);
@@ -157,18 +171,25 @@ void eventsview::render()
 		else
 			duration_text = std::to_string(int(std::ceil(duration / (3600 * 24)))) + " Tage";
 
-		auto padded_rect = rect;
-		padded_rect.x += 10;
-		padded_rect.w -= 20;
+		auto padded_rect = add_margin(rect, 10);
+
+		auto const [ text_prefix, text_postfix ] = split_horizontal(padded_rect, 100);
 
 		font.render(
-			padded_rect,
-			ev.title + " (" + duration_text + ")",
+			text_prefix,
+			duration_text,
+			font.Left | font.Middle,
+			{ 0xFF, 0xFF, 0xFF, 0x80 }
+		);
+
+		font.render(
+			text_postfix,
+			ev.title,
 			font.Left | font.Middle
 		);
 
 		font.render(
-			padded_rect,
+			text_postfix,
 			buffer,
 			font.Right | font.Middle
 		);
