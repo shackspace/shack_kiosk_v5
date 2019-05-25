@@ -15,6 +15,7 @@ struct infoview : gui_module
 	struct MuellInfo
 	{
 		tm papiermuell, restmuell, gelber_sack;
+		bool warn_papiermuell, warn_restmuell, warn_gelber_sack;
 	};
 
 	void init() override;
