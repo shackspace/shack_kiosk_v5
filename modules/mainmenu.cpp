@@ -204,7 +204,7 @@ void mainmenu::init()
 
 	center_widgets.push_back(set<powerview>(add<button>(), *col++, "flash.png"));
 
-	// center_widgets.push_back(songbutton = set<mainmenu>(add<button>(), *col++, "volume-high.png"));
+	center_widgets.push_back(songbutton = set<mainmenu>(add<button>(), *col++, "volume-high.png"));
 
 	// center_widgets.push_back(set<mainmenu>(add<button>(), *col++, "cellphone-key.png"));
 	// center_widgets.push_back(set<mainmenu>(add<button>(), *col++, "alert.png"));
@@ -305,9 +305,9 @@ void mainmenu::render()
 	std::tm const * const clock = std::localtime(&timestamp);
 
 	module_cycle_progress += time_step;
-	while(module_cycle_progress >= 4.0)
+	while(module_cycle_progress >= 10.0)
 	{
-		module_cycle_progress -= 4.0;
+		module_cycle_progress -= 10.0;
 		module_cycle++;
 	}
 	modules_cycling = (module_cycle_progress <= 1.0);
@@ -339,26 +339,25 @@ void mainmenu::render()
 		volumio_playing = info->playing;
 	}
 
-//	if(volumio_playing and (volumio_albumart != nullptr))
-//	{
-//			songbutton->background = volumio_albumart;
-//			if(clock->tm_sec % 2)
-//				songbutton->icon_tint = { 0xFF, 0xFF, 0xFF, 255 };
-//			else
-//				songbutton->icon_tint = { 0x00, 0x00, 0x00, 0xFF };
-//	}
-//	else
-//	{
-//		songbutton->background = nullptr;
-//		songbutton->icon_tint = { 0x00, 0x00, 0x00, 0xFF };
-//	}
+	if(volumio_playing and (volumio_albumart != nullptr))
+	{
+			songbutton->background = volumio_albumart;
+			if(clock->tm_sec % 2)
+				songbutton->icon_tint = { 0xFF, 0xFF, 0xFF, 255 };
+			else
+				songbutton->icon_tint = { 0x00, 0x00, 0x00, 0xFF };
+	}
+	else
+	{
+		songbutton->background = nullptr;
+		songbutton->icon_tint = { 0x00, 0x00, 0x00, 0xFF };
+	}
 
 	auto const center_off = glm::ivec2(0, 100);
 	auto const center_size = screen_size - 2 * center_off;
 
 	SDL_Rect const top_bar = { 0, 0, screen_size.x, center_off.y };
 	SDL_Rect const bottom_bar = { 0, screen_size.y - center_off.y - 1, screen_size.x, center_off.y };
-
 
 	SDL_SetRenderDrawColor(renderer, 32, 32, 32, 255);
 	SDL_RenderFillRect(renderer, &top_bar);
