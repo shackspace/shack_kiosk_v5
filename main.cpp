@@ -223,6 +223,7 @@ int main()
 		}
 
 		SDL_Event ev;
+		bool quitting = false;
 		while(SDL_PollEvent(&ev))
 		{
 			if((ev.type == SDL_MOUSEBUTTONDOWN) or (ev.type == SDL_KEYDOWN))
@@ -256,6 +257,7 @@ int main()
 			if(ev.type == SDL_QUIT)
 			{
 				next_module = nullptr;
+				quitting = true;
 			}
 			else if(previous_module == nullptr) // if no transition is in progress
 			{
@@ -270,7 +272,7 @@ int main()
 
 		auto const now = high_resolution_clock::now();
 
-		if((now - last_event) > minutes(5))
+		if(not quitting and (now - last_event) > minutes(5))
 			module::activate<screensaver>();
 
 		total_time = duration_cast<milliseconds>(now - startup).count() / 1000.0;
