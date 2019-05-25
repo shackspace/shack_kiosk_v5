@@ -343,9 +343,9 @@ void mainmenu::render()
 	{
 			songbutton->background = volumio_albumart;
 			if(clock->tm_sec % 2)
-				songbutton->icon_tint = { 0xFF, 0xFF, 0xFF, 255 };
+				songbutton->icon_tint = { 0xFF, 0xFF, 0xFF, 0x60 };
 			else
-				songbutton->icon_tint = { 0x00, 0x00, 0x00, 0xFF };
+				songbutton->icon_tint = { 0x00, 0x00, 0x00, 0x60 };
 	}
 	else
 	{

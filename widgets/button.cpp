@@ -44,6 +44,7 @@ void button::render()
 		area.h -= 2 * icon_padding;
 
 		SDL_SetTextureColorMod(icon, icon_tint.r, icon_tint.g, icon_tint.b);
+		SDL_SetTextureAlphaMod(icon, icon_tint.a);
 		SDL_RenderCopy(renderer, icon, nullptr, &area);
 	}
 }

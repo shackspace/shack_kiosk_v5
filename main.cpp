@@ -422,9 +422,19 @@ int main()
 		auto const frame_time = duration_cast<microseconds>(end_time - start_time).count();
 
 		rendering::small_font->render(
-			{ 0, 0, 150, 50 },
+			{ 10, 10, 150, 50 },
 		  std::to_string(frame_time / 1000.0) + " ms",
-			FontRenderer::Top | FontRenderer::Left
+			FontRenderer::Left | FontRenderer::Middle,
+			{ 0xFF, 0x00, 0xFF, 0xFF }
+		);
+
+		rendering::small_font->render(
+			{ 10, 60, 150, 50 },
+			std::to_string(rendering::small_font->cache.size()) + ", "
+			+ std::to_string(rendering::medium_font->cache.size()) + ", "
+			+ std::to_string(rendering::big_font->cache.size()),
+			FontRenderer::Left | FontRenderer::Middle,
+			{ 0xFF, 0x00, 0xFF, 0xFF }
 		);
 
 		SDL_RenderPresent(renderer);

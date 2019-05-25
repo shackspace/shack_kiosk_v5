@@ -84,6 +84,14 @@ void FontRenderer::render(const SDL_Rect & target, const std::string & what, int
 
 void FontRenderer::collect_garbage()
 {
+	for(auto it = cache.begin(); it != cache.end(); /* none */)
+	{
+		auto current = it;
+		it++;
+		current->second.ttl--;
+		if(current->second.ttl == 0)
+			cache.erase(current);
+	}
 	generation += 1;
 }
 
