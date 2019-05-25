@@ -1,7 +1,7 @@
 #include "powerview.hpp"
 #include "http_client.hpp"
 #include "widgets/button.hpp"
-
+#include "protected_value.hpp"
 #include "rendering.hpp"
 
 #include <thread>
@@ -45,8 +45,7 @@ namespace /* static */
 		double total() const { return phase[0] + phase[1] + phase[2]; }
 	};
 
-	std::mutex nodes_mutex;
-	std::vector<powernode> nodes;
+	protected_value<std::vector<powernode>> nodes;
 
 	[[noreturn]] static void query_thread()
 	{
@@ -101,15 +100,12 @@ namespace /* static */
 					node.phase[2] = l3[i].get<double>();
 				}
 
-				{
-					std::lock_guard _ { nodes_mutex };
-					nodes = new_nodes;
-				}
-
 				if(new_nodes.size() > 0)
 				  module::get<powerview>()->total_power = new_nodes.back().total();
 				else
 					module::get<powerview>()->total_power = -1.0;
+
+				*nodes.obtain() = std::move(new_nodes);
 			}
 			catch(...)
 			{
@@ -156,7 +152,7 @@ void powerview::render()
 	SDL_Rect rect;
 	gui_module::render();
 
-	std::lock_guard _ { nodes_mutex };
+	auto const nodes = ::nodes.obtain();
 
 	SDL_Rect const window = { 220, 20, 1040, 984 };
 
@@ -164,16 +160,16 @@ void powerview::render()
 	SDL_RenderFillRect(renderer, &window);
 
 	double max = 0;
-	for(size_t i = 0; i < nodes.size(); i++)
+	for(size_t i = 0; i < nodes->size(); i++)
 	{
-		max = std::max(max, nodes[i].total());
+		max = std::max(max, (*nodes)[i].total());
 	}
 
 	auto const max_power = 1000.0 * std::ceil(max / 1000.0);
 
 	auto const get_point = [&](size_t idx, double f) -> SDL_Point
 	{
-		int const range = (nodes.size() - 2);
+		int const range = (nodes->size() - 2);
 		float pos = int(idx) - 1;
 
 		return SDL_Point {
@@ -184,10 +180,10 @@ void powerview::render()
 
 	SDL_RenderSetClipRect(renderer, &window);
 
-	for(size_t i = 1; i < nodes.size(); i++)
+	for(size_t i = 1; i < nodes->size(); i++)
 	{
-		auto const & from = nodes.at(i - 1);
-		auto const & to   = nodes.at(i - 0);
+		auto const & from = nodes->at(i - 1);
+		auto const & to   = nodes->at(i - 0);
 
 		for(size_t j = 0; j < 3; j++)
 		{
@@ -240,7 +236,7 @@ void powerview::render()
 		FontRenderer::Top | FontRenderer::Left
 	);
 
-	if(nodes.size() > 0)
+	if(nodes->size() > 0)
 	{
 		rect = { 20, 220, 180, 64 };
 
@@ -254,7 +250,7 @@ void powerview::render()
 
 		rendering::big_font->render(
 			rect,
-			std::to_string(int(nodes.back().total())) + " W",
+			std::to_string(int(nodes->back().total())) + " W",
 			FontRenderer::Center | FontRenderer::Top
 		);
 		rect.y += rect.h;
@@ -269,7 +265,7 @@ void powerview::render()
 
 		rendering::big_font->render(
 			rect,
-			std::to_string(int(nodes.back().phase[0])) + " W",
+			std::to_string(int(nodes->back().phase[0])) + " W",
 			FontRenderer::Center | FontRenderer::Top,
 			{ 0xFF, 0x00, 0x00, 0xFF }
 		);
@@ -286,7 +282,7 @@ void powerview::render()
 
 		rendering::big_font->render(
 			rect,
-			std::to_string(int(nodes.back().phase[1])) + " W",
+			std::to_string(int(nodes->back().phase[1])) + " W",
 			FontRenderer::Center | FontRenderer::Top,
 			{ 0x00, 0xFF, 0x00, 0xFF }
 		);
@@ -302,7 +298,7 @@ void powerview::render()
 
 		rendering::big_font->render(
 			rect,
-			std::to_string(int(nodes.back().phase[2])) + " W",
+			std::to_string(int(nodes->back().phase[2])) + " W",
 			FontRenderer::Center | FontRenderer::Top,
 			{ 0x00, 0x00, 0xFF, 0xFF }
 		);

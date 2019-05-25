@@ -435,6 +435,10 @@ int main()
 		rendering::small_font->collect_garbage();
 	}
 
+	rendering::big_font.reset();
+	rendering::medium_font.reset();
+	rendering::small_font.reset();
+
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
 

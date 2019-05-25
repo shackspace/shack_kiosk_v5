@@ -1,6 +1,7 @@
 #include "tramview.hpp"
 #include "http_client.hpp"
 #include "rendering.hpp"
+#include "protected_value.hpp"
 
 #include <thread>
 #include <mutex>
@@ -28,8 +29,7 @@ namespace
 		std::string target;
 	};
 
-	std::vector<Departure> departures;
-	std::mutex departures_lock;
+	protected_value<std::vector<Departure>> departures;
 
 	void fetch(http_client & client)
 	{
@@ -101,8 +101,7 @@ namespace
 				return a.departure < b.departure;
 			});
 
-			std::lock_guard _ { departures_lock };
-			departures = std::move(data);
+			*departures.obtain() = std::move(data);
 			data_available = true;
 		}
 		catch(...)
@@ -156,8 +155,6 @@ void tramview::render()
 
 	gui_module::render();
 
-	std::lock_guard _ { departures_lock };
-
 	struct Lists
 	{
 		SDL_Rect background;
@@ -198,7 +195,7 @@ void tramview::render()
 	  Lists { { 90, 680, 600, 50 } }, // from city
 	};
 
-	for(auto const & dep : departures)
+	for(auto const & dep : *departures.obtain())
 	{
 		auto const time_diff= std::difftime(dep.departure, std::time(nullptr));
 		if(time_diff < 0)

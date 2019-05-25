@@ -49,6 +49,7 @@ HEADERS += \
     kiosk.hpp \
     modules/mainmenu.hpp \
     gui_module.hpp \
+    protected_value.hpp \
     rendering.hpp \
     widget.hpp \
     widgets/button.hpp \
