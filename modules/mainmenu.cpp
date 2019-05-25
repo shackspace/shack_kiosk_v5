@@ -441,19 +441,25 @@ void mainmenu::render()
 	  &mainmenu::render_clock_module,
 	};
 
-	auto const ren = [&](int index)
+	auto const render_module = [&](int index, size_t rect_id)
 	{
 		while(index < 0)
 			index += std::size(renderers);
-		return renderers[size_t(index + module_cycle) % std::size(renderers)];
+		auto ren = renderers[size_t(index + module_cycle) % std::size(renderers)];
+
+		SDL_RenderSetClipRect(renderer, &bottom_modules[rect_id]);
+
+		(this->*ren)(bottom_modules[rect_id]);
 	};
 
 	for(int i = 0; i < 3; i++)
 	{
-		(this->*ren(i))(bottom_modules[size_t(i)]);
+		render_module(i, size_t(i));
 	}
-	(this->*ren(3))(bottom_modules[3]);
-	(this->*ren(-1))(bottom_modules[4]);
+	render_module( 3, 3);
+	render_module(-1, 4);
+
+	SDL_RenderSetClipRect(renderer, nullptr);
 }
 
 void mainmenu::render_power_module(SDL_Rect module_rect)
@@ -534,10 +540,20 @@ void mainmenu::render_trash_module(SDL_Rect module_rect)
 
 void mainmenu::render_event_module(SDL_Rect module_rect)
 {
-	rendering::big_font->render(
-		module_rect,
-		"Event-Info"
-	);
+	if(auto ev = module::get<eventsview>()->current_event(); ev)
+	{
+		rendering::big_font->render(
+			module_rect,
+			ev->title
+		);
+	}
+	else
+	{
+		rendering::big_font->render(
+			module_rect,
+			"Kein Event"
+		);
+	}
 }
 
 void mainmenu::render_clock_module(SDL_Rect module_rect)

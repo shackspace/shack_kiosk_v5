@@ -17,15 +17,8 @@
 
 namespace
 {
-	struct Event
-	{
-		std::string title;
-		std::time_t start, end;
-		std::string room;
-		bool is_series;
-	};
 
-	protected_value<std::vector<Event>> events;
+	protected_value<std::vector<eventsview::Event>> events;
 
 	void fetch(http_client & client)
 	{
@@ -36,7 +29,7 @@ namespace
 		if(not raw)
 		{
 			*events.obtain() = {
-			    Event
+			    eventsview::Event
 					{
 						.title = "Keine Verbindung zu events.shackspace.de",
 						.start = std::time(nullptr),
@@ -48,7 +41,7 @@ namespace
 		try
 		{
 			auto const json = nlohmann::json::parse(raw->begin(), raw->end());
-			std::vector<Event> list;
+			std::vector<eventsview::Event> list;
 
 			for(auto const & val : json)
 			{
@@ -82,7 +75,7 @@ namespace
 			}
 
 			// erase all events in the past
-			list.erase(std::remove_if(list.begin(), list.end(), [&](Event const & e) {
+			list.erase(std::remove_if(list.begin(), list.end(), [&](eventsview::Event const & e) {
 				// auto const day = *std::localtime(&e.start);
 				// return (day.tm_yday < now.tm_yday) and (day.tm_year <= now.tm_yday);
 				return std::difftime(e.end, now_t) < 0;
@@ -94,7 +87,7 @@ namespace
 //			}), list.end());
 
 			// sort list by start of event
-			std::sort(list.begin(), list.end(), [](Event const & e1, Event const & e2)
+			std::sort(list.begin(), list.end(), [](eventsview::Event const & e1, eventsview::Event const & e2)
 			{
 				return std::difftime(e1.start, e2.start) < 0;
 			});
@@ -131,6 +124,19 @@ namespace
 			std::this_thread::sleep_for(std::chrono::minutes(10));
 		}
 	}
+}
+
+std::optional<eventsview::Event> eventsview::current_event() const
+{
+	auto handle = events.obtain();
+	if(handle->size() == 0)
+		return std::nullopt;
+	auto const ev = handle->front();
+	auto const now = std::time(nullptr);
+	if((std::difftime(now, ev.start) > 0) and (std::difftime(ev.end, now) < 0))
+		return std::move(ev);
+	else
+		return std::nullopt;
 }
 
 void eventsview::init()
