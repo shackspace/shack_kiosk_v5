@@ -35,6 +35,12 @@ namespace
 			auto const json = nlohmann::json::parse(raw->begin(), raw->end());
 
 			Muell muell;
+
+			// initializing time values to prevent std::mktime() from chaotically changing the date
+		 	muell.date.tm_sec = 0;
+			muell.date.tm_min = 0;
+			muell.date.tm_hour = 0;
+
 			std::stringstream str { std::string(json["date"]) };
 			str >> std::get_time(&muell.date, "%Y-%m-%d");
 			muell.mail_sended = json["mail_sended"];
