@@ -167,7 +167,7 @@ void eventsview::render()
 		auto const tm = *std::localtime(&ev.start);
 		auto const duration = std::difftime(ev.end, ev.start);
 		char buffer[256];
-		snprintf(buffer, sizeof buffer, "%02d.%02d.%04d %02d:%02d", tm.tm_mday, tm.tm_mon, tm.tm_year, tm.tm_hour, tm.tm_min);
+		snprintf(buffer, sizeof buffer, "%02d.%02d.%04d %02d:%02d", tm.tm_mday, tm.tm_mon, 1900+tm.tm_year, tm.tm_hour, tm.tm_min);
 
 		std::string duration_text;
 		if(duration < 3600)
