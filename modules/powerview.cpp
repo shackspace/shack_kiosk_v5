@@ -9,6 +9,7 @@
 #include <nlohmann/json.hpp>
 #include <vector>
 #include <atomic>
+#include <iomanip>
 
 namespace /* static */
 {
