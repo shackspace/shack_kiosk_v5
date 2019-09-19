@@ -177,8 +177,6 @@ namespace /* static */
 
 				if(new_nodes.size() > 0)
 				  module::get<powerview>()->total_power = new_nodes.back().total();
-				else
-					module::get<powerview>()->total_power = -1.0;
 
 				*nodes.obtain() = std::move(new_nodes);
 
