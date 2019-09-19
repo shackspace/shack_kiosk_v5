@@ -12,6 +12,55 @@
 
 namespace /* static */
 {
+	using std::string;
+	using std::vector;
+
+	void hexchar(unsigned char c, unsigned char &hex1, unsigned char &hex2)
+	{
+	    hex1 = c / 16;
+	    hex2 = c % 16;
+	    hex1 += hex1 <= 9 ? '0' : 'a' - 10;
+	    hex2 += hex2 <= 9 ? '0' : 'a' - 10;
+	}
+
+	string urlencode(string s)
+	{
+	    const char *str = s.c_str();
+	    vector<char> v(s.size());
+	    v.clear();
+	    for (size_t i = 0, l = s.size(); i < l; i++)
+	    {
+	        char c = str[i];
+	        if ((c >= '0' && c <= '9') ||
+	            (c >= 'a' && c <= 'z') ||
+	            (c >= 'A' && c <= 'Z') ||
+	            c == '-' || c == '_' || c == '.' || c == '!' || c == '~' ||
+	            c == '*' || c == '\'' || c == '(' || c == ')')
+	        {
+	            v.push_back(c);
+	        }
+	        else if (c == ' ')
+	        {
+	            v.push_back('+');
+	        }
+	        else
+	        {
+	            v.push_back('%');
+	            unsigned char d1, d2;
+	            hexchar(c, d1, d2);
+	            v.push_back(d1);
+	            v.push_back(d2);
+	        }
+	    }
+
+	    return string(v.cbegin(), v.cend());
+	}
+}
+
+#include <iostream>
+
+namespace /* static */
+{
 	std::atomic_flag fast_reload;
 	std::atomic_int scroll_progress;
 
@@ -25,25 +74,39 @@ namespace /* static */
 
 	zoomscale const zoom_scale[] =
 	{
-	  {   15, "30 sec" },
-	  {   30,  "1 min" },
-	  {   60,  "2 min" },
-	  {  150,  "5 min" },
-	  {  300, "10 min" },
-	  {  900, "30 min" },
-	  { 1800, "60 min" },
-	  { 3600,  "2 std" },
-	  { 9000,  "5 std" },
+	  {    30, "30 sec" },
+	  {    60,  "1 min" },
+	  {   120,  "2 min" },
+	  {   300,  "5 min" },
+	  {   600, "10 min" },
+	  {  1800, "30 min" },
+	  {  3600, "60 min" },
+	  {  7200,  "2 std" },
+	  { 18000,  "5 std" },
 	};
 	size_t const zoom_scale_cnt = sizeof(zoom_scale) / sizeof(*zoom_scale);
 
 	struct powernode
 	{
-		double time;
+		tm time;
+
 		double phase[3];
 
 		double total() const { return phase[0] + phase[1] + phase[2]; }
 	};
+
+	tm parse_timestamp(std::string const & item)
+	{
+		tm t;
+		memset(&t, 0, sizeof t);
+		std::stringstream(item) >> std::get_time(&t, "%Y-%m-%dT%H:%M:%S");
+
+		// std::mktime(&t);
+
+		// t.tm_isdst = -1; // auto-determine DST
+
+		return t;
+	}
 
 	protected_value<std::vector<powernode>> nodes;
 
@@ -59,16 +122,21 @@ namespace /* static */
 
 		while(true)
 		{
-			for(size_t i = 0; (i < 2000) and fast_reload.test_and_set(); i++)
-			{
-				scroll_progress.store(i);
-				std::this_thread::sleep_for(std::chrono::milliseconds(1));
-			}
+			auto level = zoom_scale[zoom_level];
 
-			auto data = client.transfer(
-				client.get,
-				"http://glados.shack/siid/apps/powermeter.py?n=" + std::to_string(zoom_scale[zoom_level].value)
+			std::string time_range = std::to_string(level.value) + "s";
+
+			std::string time_step = std::to_string(std::max(1, level.value / 1000)) + "s";
+
+			std::string const msg = "http://influx.shack/query?pretty=false&db=telegraf&q=" +
+				urlencode(
+					"SELECT mean(\"value\") FROM \"Power\" WHERE (\"topic\" = '/power/total/L1/Power') AND time >= now() - " + time_range + " GROUP BY time(" + time_step + ") fill(null);"
+					"SELECT mean(\"value\") FROM \"Power\" WHERE (\"topic\" = '/power/total/L2/Power') AND time >= now() - " + time_range + " GROUP BY time(" + time_step + ") fill(null);"
+					"SELECT mean(\"value\") FROM \"Power\" WHERE (\"topic\" = '/power/total/L3/Power') AND time >= now() - " + time_range + " GROUP BY time(" + time_step + ") fill(null)"
 			);
+
+			auto data = client.transfer(client.get, msg);
+
 			if(not data)
 			{
 				module::get<powerview>()->total_power = -1.0;
@@ -78,26 +146,29 @@ namespace /* static */
 			{
 				auto cfg = json::parse(data->begin(), data->end());
 
-				auto l1 = cfg["L1.Power"];
-				auto l2 = cfg["L2.Power"];
-				auto l3 = cfg["L3.Power"];
-				auto time = cfg["Minutes ago"];
+				auto results = cfg["results"];
+
+				auto l1 = results[0]["series"][0]["values"];
+				auto l2 = results[1]["series"][0]["values"];
+				auto l3 = results[2]["series"][0]["values"];
 
 				if(l1.size() != l2.size())
 					continue;
 				if(l1.size() != l3.size())
-					continue;
-				if(l1.size() != time.size())
 					continue;
 
 				std::vector<powernode> new_nodes;
 				for(size_t i = 0; i < l1.size(); i++)
 				{
 					auto & node = new_nodes.emplace_back();
-					node.time = time[i].get<double>();
-					node.phase[0] = l1[i].get<double>();
-					node.phase[1] = l2[i].get<double>();
-					node.phase[2] = l3[i].get<double>();
+					try {
+						node.time = parse_timestamp(l1[i][0].get<string>());
+						node.phase[0] = l1[i][1].get<double>();
+						node.phase[1] = l2[i][1].get<double>();
+						node.phase[2] = l3[i][1].get<double>();
+					} catch(...) {
+						new_nodes.erase(new_nodes.end() - 1);
+					}
 				}
 
 				if(new_nodes.size() > 0)
@@ -110,6 +181,12 @@ namespace /* static */
 			catch(...)
 			{
 				module::get<powerview>()->total_power = -1.0;
+			}
+
+			fast_reload.test_and_set(); // make sure we have "set"
+			for(size_t i = 0; i < 50 and fast_reload.test_and_set(); i++)
+			{
+				std::this_thread::sleep_for(std::chrono::milliseconds(100));
 			}
 		}
 	}
