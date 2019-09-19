@@ -121,6 +121,7 @@ namespace /* static */
 			{ "Access-Control-Allow-Origin", "*" },
 		});
 
+		int failcounter = 0;
 		while(true)
 		{
 			auto level = zoom_scale[zoom_level];
@@ -140,7 +141,9 @@ namespace /* static */
 
 			if(not data)
 			{
-				module::get<powerview>()->total_power = -1.0;
+				// server not reachable, ignore and try again
+				std::this_thread::sleep_for(std::chrono::seconds(10));
+
 				continue;
 			}
 			try
@@ -178,10 +181,15 @@ namespace /* static */
 					module::get<powerview>()->total_power = -1.0;
 
 				*nodes.obtain() = std::move(new_nodes);
+
+				failcounter = 0;
 			}
 			catch(...)
 			{
-				module::get<powerview>()->total_power = -1.0;
+				failcounter++;
+				if(failcounter >= 10) {
+					module::get<powerview>()->total_power = -1.0;
+				}
 			}
 
 			fast_reload.test_and_set(); // make sure we have "set"
