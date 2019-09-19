@@ -195,7 +195,8 @@ void tramview::render()
 	  Lists { { 90, 680, 600, 50 } }, // from city
 	};
 
-	for(auto const & dep : *departures.obtain())
+	auto view = departures.obtain();
+	for(auto const & dep : *view)
 	{
 		auto const time_diff= std::difftime(dep.departure, std::time(nullptr));
 		if(time_diff < 0)
