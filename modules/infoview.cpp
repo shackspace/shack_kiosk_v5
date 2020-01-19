@@ -3,6 +3,7 @@
 #include "rendering.hpp"
 #include "protected_value.hpp"
 #include "rect_tools.hpp"
+#include "../widgets/button.hpp"
 
 #include <thread>
 #include <mutex>
@@ -102,6 +103,29 @@ void infoview::init()
 {
 	add_back_button();
 	std::thread(task).detach();
+
+    {
+		auto * btn = add<button>();
+		btn->bounds = { 1100, 844, 170, 170 };
+		btn->icon = IMG_LoadTexture(renderer, (resource_root / "icons" / "campfire-mode.png" ).c_str());
+		btn->color = { 0xE6, 0x4A, 0x19, 255 };
+		btn->on_click = [=]() {
+            std::thread([]() {
+                system("/home/shack/run-fireplace.sh");
+            }).detach();
+		};
+	}
+    {
+		auto * btn = add<button>();
+		btn->bounds = { 920, 844, 170, 170 };
+		btn->icon = IMG_LoadTexture(renderer, (resource_root / "icons" / "mii-channel.png" ).c_str());
+		btn->color = { 0x85, 0xda, 0xf9, 255 };
+		btn->on_click = [=]() {
+            std::thread([]() {
+                system("/home/shack/run-mii-channel.sh");
+            }).detach();
+		};
+	}
 }
 
 void infoview::render()
@@ -137,20 +161,20 @@ void infoview::render()
 			);
 		}
 
-		if(alert)
-		{
-			rendering::small_font->render(
-				done_pos,
-				muell.main_action_done ? "Erledigt" : "Rausbringen!",
-				FontRenderer::Left | FontRenderer::Middle
-			);
+//		if(alert)
+//		{
+//			rendering::small_font->render(
+//				done_pos,
+//				muell.main_action_done ? "Erledigt" : "Rausbringen!",
+//				FontRenderer::Left | FontRenderer::Middle
+//			);
 
-			rendering::small_font->render(
-				mail_pos,
-				muell.mail_sended ? "Mail erledigt" : "Mail ausstehend",
-				FontRenderer::Right | FontRenderer::Middle
-			);
-		}
+//			rendering::small_font->render(
+//				mail_pos,
+//				muell.mail_sended ? "Mail erledigt" : "Mail ausstehend",
+//				FontRenderer::Right | FontRenderer::Middle
+//			);
+//		}
 	};
 
 	render_muellinfo({ 240,  30, 1030, 50 }, "Restmüll",    *restmuell.obtain());
