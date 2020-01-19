@@ -45,6 +45,8 @@ struct mainmenu : gui_module
 
 	void render() override;
 
+    static std::string get_keyholder();
+
 	void render_power_module(SDL_Rect module_rect);
 	void render_keyholder_module(SDL_Rect module_rect);
 	void render_trash_module(SDL_Rect module_rect);

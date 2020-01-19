@@ -4,6 +4,7 @@
 #include "protected_value.hpp"
 #include "rect_tools.hpp"
 #include "../widgets/button.hpp"
+#include "mainmenu.hpp"
 
 #include <thread>
 #include <mutex>
@@ -180,4 +181,19 @@ void infoview::render()
 	render_muellinfo({ 240,  30, 1030, 50 }, "Restmüll",    *restmuell.obtain());
 	render_muellinfo({ 240,  80, 1030, 50 }, "Papiermüll",  *papiermuell.obtain());
 	render_muellinfo({ 240, 130, 1030, 50 }, "Gelber Sack", *gelber_sack.obtain());
+
+    {
+        auto const [ left_half, right_half ] = split_horizontal({ 240, 230, 1030, 50 }, 1030 / 4);
+
+        rendering::small_font->render(
+            left_half,
+            "Keyholder",
+            FontRenderer::Left | FontRenderer::Middle
+        );
+        rendering::small_font->render(
+            right_half,
+             mainmenu::get_keyholder(),
+            FontRenderer::Left | FontRenderer::Middle
+        );
+    }
 }
