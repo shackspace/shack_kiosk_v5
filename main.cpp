@@ -76,6 +76,9 @@ int main()
 	if(window == nullptr)
 		die("Failed to create window: %s", SDL_GetError());
 
+	// Do not disable a configured screensaver from X
+	SDL_EnableScreenSaver();
+
 	SDL_SetHintWithPriority("SDL_HINT_RENDER_VSYNC", "0", SDL_HINT_OVERRIDE);
 
 	renderer = SDL_CreateRenderer(
