@@ -1,7 +1,7 @@
-###### Shack Kiosk v5
+# Shack Kiosk v5
 A faster and more responsive version of the shack kiosk
 
-##### Dependencies
+## Dependencies
 
 - qt5-qmake
 - pkg-config
@@ -11,7 +11,7 @@ A faster and more responsive version of the shack kiosk
 - libsdl2-ttf-dev
 - libcurl4-openssl-dev
 
-##### Building
+## Building
 
 ```
 git clone https://github.com/shackspace/shack_kiosk_v5.git
