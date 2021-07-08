@@ -601,3 +601,8 @@ void mainmenu::render_clock_module(SDL_Rect module_rect)
 		buffer
 	);
 }
+
+std::string mainmenu::get_keyholder()
+{
+    return keyholder.obtain().value();
+}
